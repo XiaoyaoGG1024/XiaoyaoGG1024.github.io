@@ -1120,6 +1120,7 @@ function createtime1() {
 
   var ascll = [
     `欢迎来到逍遥哥哥的小家!`,
+    `\n`,
     `----- 🍭🍭🍭-----`,
     `
         
