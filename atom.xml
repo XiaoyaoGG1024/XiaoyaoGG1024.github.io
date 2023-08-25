@@ -6,7 +6,7 @@
   <link href="https://xiaoyaogg1024.github.io/atom.xml" rel="self"/>
   
   <link href="https://xiaoyaogg1024.github.io/"/>
-  <updated>2023-10-23T14:00:00.000Z</updated>
+  <updated>2023-08-25T03:46:22.969Z</updated>
   <id>https://xiaoyaogg1024.github.io/</id>
   
   <author>
@@ -15,6 +15,37 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>2023-08-20-基于Hexo+GitPage的Blog部署</title>
+    <link href="https://xiaoyaogg1024.github.io/posts/9c3103a3.html"/>
+    <id>https://xiaoyaogg1024.github.io/posts/9c3103a3.html</id>
+    <published>2023-08-25T02:55:57.000Z</published>
+    <updated>2023-08-25T03:46:22.969Z</updated>
+    
+    <content type="html"><![CDATA[<p><a href="https://hexo.io/zh-cn/docs/">原文档</a></p><h1>Hexo</h1><blockquote><p>Hexo 是一个快速、简洁且高效的博客框架。Hexo 使用 Markdown（或其他标记语言）解析文章，在几秒内，即可利用靓丽的主题生成静态网页。</p></blockquote><h1>基础环境搭建</h1><blockquote><p>基于win10环境</p><ul><li><a href="https://nodejs.org/en">nodejs下载</a></li><li><a href="https://git-scm.com/downloads">Git下载</a></li></ul></blockquote><h1>Hexo的安装与使用</h1><blockquote><ul><li>使用开发工具或者命令行在某个盘符下</li></ul><blockquote><p>使用全局或者局部安装</p><blockquote><p>npm install -g hexo-cli   //   npm install hexo    hexo为项目名自定义</p></blockquote></blockquote></blockquote><h2 id="Node-js-版本限制-建议下载最新版本">Node.js 版本限制  建议下载最新版本</h2><h1>Hexo建站</h1><blockquote><p>如果未在<br>cd 文件夹中<br>npm i</p></blockquote><h2 id="目录介绍–具体请参考官方文档"><a href="https://hexo.io/zh-cn/docs/configuration">目录介绍–具体请参考官方文档</a></h2><blockquote><p>.<br>├── _config.yml<br>├── package.json<br>├── scaffolds<br>├── source<br>|   ├── _drafts<br>|   └── _posts<br>└── themes</p></blockquote><h2 id="服务端">服务端</h2><blockquote><p>npm install hexo-server --save<br>hexo cl; hexo g; hexo s<br>当清除后简写操作  hexo g -s<br>安装完成后，输入以下命令以启动服务器，您的网站会在 <a href="http://localhost:4000">http://localhost:4000</a> 下启动。在服务器启动期间，Hexo 会监视文件变动并自动更新，您无须重启服务器。</p></blockquote><h3 id="静态模式">静态模式</h3><blockquote><p>服务器只处理 public 文件夹内的文件，而不会处理文件变动，在执行时，您应该先自行执行 hexo generate，此模式通常用于生产环境（production mode）下。<br>hexo s</p></blockquote><h2 id="生成端-部署到服务器">生成端 部署到服务器</h2><blockquote><p>hexo g -d</p></blockquote><h1><a href="https://hexo.io/zh-cn/docs/github-pages">注册并连接github</a></h1><blockquote><ul><li>参考标题超链接里面</li><li>主要是在github上建立一个 <strong>&lt;你的 GitHub 用户名&gt;.github.io</strong> 仓库</li><li>修改_config.yml中deploy参数信息</li><li><font color=red>进阶详情请参考官方文档！！！</font></li></ul></blockquote>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;p&gt;&lt;a href=&quot;https://hexo.io/zh-cn/docs/&quot;&gt;原文档&lt;/a&gt;&lt;/p&gt;
+&lt;h1&gt;Hexo&lt;/h1&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Hexo 是一个快速、简洁且高效的博客框架。Hexo 使用 Markdown（或其他标记语言）解析文章，在几秒内，</summary>
+      
+    
+    
+    
+    <category term="环境搭建" scheme="https://xiaoyaogg1024.github.io/categories/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
+    
+    
+    <category term="Hexo" scheme="https://xiaoyaogg1024.github.io/tags/Hexo/"/>
+    
+    <category term="Git" scheme="https://xiaoyaogg1024.github.io/tags/Git/"/>
+    
+    <category term="NodeJs" scheme="https://xiaoyaogg1024.github.io/tags/NodeJs/"/>
+    
+  </entry>
   
   <entry>
     <title>Markdown语法与外挂标签写法汇总</title>
