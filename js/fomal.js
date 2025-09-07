@@ -3169,14 +3169,22 @@ let btstu = "url(http://api.btstu.cn/sjbz/?lx=suiji)";
 // unsplash随机 https://source.unsplash.com/random/1920x1080/daily (weekly)
 let unsplash = "url(https://source.unsplash.com/random/1920x1080/)";
 
-
-// 更换背景(自己的代码)
-if (localStorage.getItem("blogbg") != undefined) {
-  setBg(localStorage.getItem("blogbg"));
+// 设置背景属性
+function setBg(s) {
+  document.getElementById("defineBg").innerText = `:root{
+    --default-bg: ${s};
+    --darkmode-bg: ${s};
+    --mobileday-bg: ${s};
+    --mobilenight-bg: ${s};
+  }`;
+}
+const bg = localStorage.getItem("blogbg");
+if (bg) {
+  setBg(bg);
 } else {
   document.getElementById("defineBg").innerText = `:root{
     --default-bg: url(https://lskypro.acozycotage.net/Fomalhaut/img/dm14.webp);
-    --darkmode-bg:url(https://lskypro.acozycotage.net/Fomalhaut/img/yuanshen1.webp);
+    --darkmode-bg: url(https://lskypro.acozycotage.net/Fomalhaut/img/yuanshen1.webp);
     --mobileday-bg: url(https://lskypro.acozycotage.net/Fomalhaut/img/snow.webp);
     --mobilenight-bg: url(https://lskypro.acozycotage.net/Fomalhaut/img/mb8.webp);
   }`;
@@ -3188,15 +3196,7 @@ function changeBg(s) {
   setBg(s);
   localStorage.setItem("blogbg", s);
 }
-// 设置背景属性
-function setBg(s) {
-  document.getElementById("defineBg").innerText = `:root{
-    --default-bg: ${s};
-    --darkmode-bg: ${s};
-    --mobileday-bg: ${s};
-    --mobilenight-bg: ${s};
-  }`;
-}
+
 
 // 切换链接对应的背景(加入了链接检验与防抖)
 function getPicture() {
