@@ -739,6 +739,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('menu-mask').addEventListener('click', e => { sidebarFn.close() })
 
     clickFnOfSubMenu()
+    GLOBAL_CONFIG.islazyload && lazyloadImg()
     GLOBAL_CONFIG.copyright !== undefined && addCopyright()
   }
 
@@ -775,9 +776,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
   refreshFn()
   unRefreshFn()
-
-  // initialize lazyload after all resources have been loaded
-  window.addEventListener('load', () => {
-    GLOBAL_CONFIG.islazyload && lazyloadImg()
-  })
 })
