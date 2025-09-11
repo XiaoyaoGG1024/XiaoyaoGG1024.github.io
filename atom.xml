@@ -6,7 +6,7 @@
   <link href="https://xiaoyaogg1024.github.io/atom.xml" rel="self"/>
   
   <link href="https://xiaoyaogg1024.github.io/"/>
-  <updated>2025-09-11T06:41:36.956Z</updated>
+  <updated>2025-09-11T06:47:15.157Z</updated>
   <id>https://xiaoyaogg1024.github.io/</id>
   
   <author>
@@ -21,12 +21,12 @@
     <link href="https://xiaoyaogg1024.github.io/posts/fdd1f803.html"/>
     <id>https://xiaoyaogg1024.github.io/posts/fdd1f803.html</id>
     <published>2025-09-11T06:37:40.000Z</published>
-    <updated>2025-09-11T06:41:36.956Z</updated>
+    <updated>2025-09-11T06:47:15.157Z</updated>
     
     <content type="html"><![CDATA[<h1 id="kkpay架构图"><a href="#kkpay架构图" class="headerlink" title="kkpay架构图"></a>kkpay架构图</h1><p>本图基于 draw.io 设计，展示了黑灰产业链中的资金流转、组织架构及关键节点，便于研究与分析。<br><img src="/assets/kkb.webp" alt="KKB" /></p><h2 id="📌-架构总览"><a href="#📌-架构总览" class="headerlink" title="📌 架构总览"></a>📌 架构总览</h2><p>整体分为四个部分：</p><ol><li><p><strong>用户与引流入口</strong>  </p><ul><li>用户 A / B / C  </li><li>引流渠道：某某直播 App、某某交友平台、某某资讯网页  </li></ul></li><li><p><strong>网赌平台</strong>  </p><ul><li>平台 X / 平台 Y  </li><li>提供充值、提现入口  </li></ul></li><li><p><strong>支付与资金流</strong>  </p><ul><li>充值（RMB/USDT → KKB）  </li><li>提现（KKB → RMB/USDT）  </li><li>KKpay 支付接口  </li><li>渠道商 / 承兑商  </li><li>相关订单号、汇率记录  </li></ul></li><li><p><strong>公司组织架构</strong>  </p><ul><li>xx 集团  </li><li>xx 分公司  </li><li>渠道商 | 承兑商  </li></ul></li></ol><hr><h2 id="🔄-资金流逻辑"><a href="#🔄-资金流逻辑" class="headerlink" title="🔄 资金流逻辑"></a>🔄 资金流逻辑</h2><ul><li>用户通过引流入口注册 → 对接到分公司渠道。  </li><li>用户进入网赌平台（X/Y）。  </li><li>平台提供充值与提现功能：  <ul><li><strong>充值</strong>：RMB/USDT 转换为 KKB  </li><li><strong>提现</strong>：KKB 再兑换回 RMB/USDT  </li></ul></li><li>支付环节通过 <strong>KKpay 接口</strong>完成，涉及渠道商、承兑商。  </li><li>在资金流过程中，会产生订单号，记录兑换汇率（RMB、美元、USDT、KKB等）。  </li></ul><hr><h2 id="🏢-组织架构"><a href="#🏢-组织架构" class="headerlink" title="🏢 组织架构"></a>🏢 组织架构</h2><ul><li><strong>集团 → 分公司 → 渠道商/承兑商</strong>  </li><li>渠道商与支付接口协同，完成上下分（KKB 兑换与流转）。  </li><li>分公司根据不同引流方式负责导入用户。  </li></ul><hr><h2 id="🎯-可打击对象"><a href="#🎯-可打击对象" class="headerlink" title="🎯 可打击对象"></a>🎯 可打击对象</h2><p>图中标红部分为潜在打击环节：  </p><ul><li>代理  </li><li>平台人员  </li><li>渠道商  </li><li>洗钱 / 跑分人员  </li><li>一二级卡  </li></ul><hr><h2 id="📊-图示说明"><a href="#📊-图示说明" class="headerlink" title="📊 图示说明"></a>📊 图示说明</h2><ul><li><strong>红色箭头</strong>：资金流动  </li><li><strong>蓝色箭头</strong>：组织上下级关系  </li><li><strong>灰色箭头</strong>：注册/导流路径  </li><li><strong>彩色节点</strong>：  <ul><li>橙色：用户侧  </li><li>黄色：业务环节（充值、提现）  </li><li>红色：重点打击对象  </li><li>绿色：渠道/承兑  </li><li>蓝色：记录、数据流  </li></ul></li></ul><hr><h2 id="🔗-使用方式"><a href="#🔗-使用方式" class="headerlink" title="🔗 使用方式"></a>🔗 使用方式</h2><ul><li>你可以在博客中通过以下方式展示该架构：<ul><li>导出为 <strong>SVG/PNG</strong> 插入文章  </li><li>或使用 iframe 引用 draw.io 在线图表  </li></ul></li></ul><hr>]]></content>
     
     
-    <summary type="html">hexo clean &amp;&amp; hexo g &amp;&amp; hexo s   hexo g -d  hexo new file</summary>
+    <summary type="html">kkb方案</summary>
     
     
     
@@ -126,11 +126,11 @@
     <category term="个人自传" scheme="https://xiaoyaogg1024.github.io/categories/%E4%B8%AA%E4%BA%BA%E8%87%AA%E4%BC%A0/"/>
     
     
+    <category term="markdown" scheme="https://xiaoyaogg1024.github.io/tags/markdown/"/>
+    
     <category term="vlog" scheme="https://xiaoyaogg1024.github.io/tags/vlog/"/>
     
     <category term="笔记" scheme="https://xiaoyaogg1024.github.io/tags/%E7%AC%94%E8%AE%B0/"/>
-    
-    <category term="markdown" scheme="https://xiaoyaogg1024.github.io/tags/markdown/"/>
     
   </entry>
   
