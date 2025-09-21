@@ -1,7 +1,29 @@
 var leonus = {
     linkCom: e => {
-        var t = document.querySelector(".el-textarea__inner");
-        "bf" == e ? (t.value = "```yml\n", t.value += "- name: \n  link: \n  avatar: \n  descr: \n  siteshot: ", t.value += "\n```", t.setSelectionRange(15, 15)) : (t.value = "站点名称：\n站点地址：\n头像链接：\n站点描述：\n站点截图：", t.setSelectionRange(5, 5)), t.focus()
+        // 兼容多种评论系统的文本域选择器
+        var t = document.querySelector(".el-textarea__inner") ||
+                document.querySelector(".wl-editor") ||
+                document.querySelector(".wl-input") ||
+                document.querySelector("textarea[placeholder*='评论']") ||
+                document.querySelector("textarea");
+
+        if (!t) {
+            alert("未找到评论框，请确保页面已完全加载");
+            return;
+        }
+
+        if ("bf" == e) {
+            t.value = "```yml\n- name: \n  link: \n  avatar: \n  descr: \n  siteshot: \n```";
+            t.setSelectionRange(15, 15);
+        } else {
+            t.value = "站点名称：\n站点地址：\n头像链接：\n站点描述：\n站点截图：";
+            t.setSelectionRange(5, 5);
+        }
+
+        t.focus();
+
+        // 触发input事件，确保评论系统识别内容变化
+        t.dispatchEvent(new Event('input', { bubbles: true }));
     },
     owoBig: () => {
         if (!document.getElementById("post-comment") || document.body.clientWidth < 768) return;
