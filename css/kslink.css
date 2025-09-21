@@ -36,3 +36,37 @@ button {
     background: var(--theme-color);
     color: #fff;
 }
+
+/* 特殊按钮样式 */
+.addBtn .reset-btn {
+    background: #ff6b6b;
+    color: white;
+}
+
+.addBtn .reset-btn:hover {
+    background: #ee5a5a;
+    transform: translateY(-2px);
+}
+
+.addBtn .clear-cache-btn {
+    background: #4ecdc4;
+    color: white;
+}
+
+.addBtn .clear-cache-btn:hover {
+    background: #45b7b8;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .addBtn {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .addBtn button {
+        width: 90%;
+        max-width: 300px;
+        margin: 8px 0;
+    }
+}
