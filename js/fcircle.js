@@ -157,508 +157,6 @@ class FishTimeManager {
   }
 }
 
-// ---------------- 修仙系统管理器 ----------------
-class CultivationManager {
-  constructor() {
-    // 境界系统 - 更具修仙小说风格
-    this.REALMS = [
-      {
-        name: "炼气",
-        desc: "凡胎肉体，初窥仙途。纳天地灵气入体，洗涤凡骨，脱胎换骨始于此境。",
-        breakthrough: "灵气汇聚丹田，真元初生，踏入修仙门槛！"
-      },
-      {
-        name: "筑基",
-        desc: "筑道基，固根本。真元凝实如液，可御器飞行，寿增百载。",
-        breakthrough: "天地共鸣，道基成型，真正踏入修仙正途！"
-      },
-      {
-        name: "金丹",
-        desc: "凝聚金丹，点石成金。一粒金丹吞入腹，我命由我不由天。",
-        breakthrough: "丹田金光大盛，金丹凝成，脱离凡俗之境！"
-      },
-      {
-        name: "元婴",
-        desc: "元神化婴，神魂不灭。纵然肉身毁灭，元婴亦可夺舍重生。",
-        breakthrough: "元神蜕变，婴形初现，神识暴增百倍！"
-      },
-      {
-        name: "化神",
-        desc: "神通广大，移山填海。一念之间，千里之外取人首级。",
-        breakthrough: "神识化虚为实，领悟天地法则，神通初显！"
-      },
-      {
-        name: "炼虚",
-        desc: "炼化虚空，掌控空间。举手投足间，虚空破碎，万物湮灭。",
-        breakthrough: "虚空在握，空间之力尽在掌控！"
-      },
-      {
-        name: "合体",
-        desc: "天人合一，道法自然。与天地同寿，日月同辉。",
-        breakthrough: "天地认可，道心圆满，与天地法则融为一体！"
-      },
-      {
-        name: "大乘",
-        desc: "道法大成，无所不能。一念生死，众生如蝼蚁。",
-        breakthrough: "道法圆满，超脱生死，世间再无敌手！"
-      },
-      {
-        name: "渡劫",
-        desc: "天劫降临，九死一生。渡过此劫，便可飞升仙界。",
-        breakthrough: "九九天劫，劫雷洗礼，凤凰涅槃，仙路在望！"
-      },
-      {
-        name: "真仙",
-        desc: "飞升仙界，位列仙班。不老不死，与天地同存。",
-        breakthrough: "白日飞升，列位仙班，从此长生不死！"
-      },
-      {
-        name: "太乙",
-        desc: "太乙金仙，法则化身。掌控一方天地，众仙朝拜。",
-        breakthrough: "太乙道果成就，超脱五行，执掌天地法则！"
-      },
-      {
-        name: "大罗",
-        desc: "大罗金仙，超脱时空。过去现在未来，无所不在，无所不能。",
-        breakthrough: "大罗道果圆满，超脱一切，与道同存！"
-      }
-    ];
-
-    this.STAGES = ["前期", "中期", "后期"];
-
-    // 修炼日志模板
-    this.CULTIVATION_LOGS = [
-      "静心调息，真元缓缓流转，丹田微暖。",
-      "感悟天地灵气，心境渐趋空明。",
-      "真元运转一个大周天，修为略有精进。",
-      "参悟功法奥义，对境界理解更深一层。",
-      "引导灵气入体，洗练筋骨经脉。",
-      "冥想中偶有所悟，心境更加澄澈。",
-      "专注修炼，真元纯度再次提升。",
-      "感受天地大道，修为稳步增长。"
-    ];
-
-    // 奇遇事件库
-    this.ADVENTURES = [
-      {
-        type: "treasure",
-        name: "发现灵草",
-        desc: "闭关时偶然发现一株百年灵草，服用后气血大增。",
-        rewards: { hp: 30, mana: 10 }
-      },
-      {
-        type: "battle",
-        name: "击败妖兽",
-        desc: "出关途中遇到妖兽，经过一番激战，成功将其击败。",
-        rewards: { attack: 5, defense: 3, exp: 50 }
-      },
-      {
-        type: "enlightenment",
-        name: "顿悟天机",
-        desc: "观看日出时突然顿悟，对修炼有了新的理解。",
-        rewards: { spirit: 15, comprehension: 10 }
-      },
-      {
-        type: "resource",
-        name: "获得灵石",
-        desc: "在山洞中发现了前人留下的灵石宝藏。",
-        rewards: { spiritualStone: 100 }
-      },
-      {
-        type: "mentor",
-        name: "高人指点",
-        desc: "遇到一位隐世高人，得到了珍贵的修炼指导。",
-        rewards: { comprehension: 20, luck: 5 }
-      }
-    ];
-
-    this.STORAGE_KEY = 'cultivationState_v2';
-    this.APPLIED_KEY = 'cultivationAppliedMinutes_v2';
-    this.LOGS_KEY = 'cultivationLogs_v1';
-
-    // 初始化
-    this.loadState();
-    this.renderCultivation();
-    this.setupEventListeners();
-  }
-
-  loadState() {
-    try {
-      const raw = localStorage.getItem(this.STORAGE_KEY);
-      if (raw) {
-        this.state = JSON.parse(raw);
-        // 确保所有属性存在
-        this.state.realmIndex = this.state.realmIndex || 0;
-        this.state.stageIndex = this.state.stageIndex || 0;
-        this.state.level = this.state.level || 1;
-        this.state.exp = this.state.exp || 0;
-        this.state.tribulation = this.state.tribulation || {needed:false, successRate:0.3, failCount:0};
-
-        // 新增属性系统
-        this.state.attributes = this.state.attributes || {
-          attack: 10,
-          defense: 8,
-          hp: 100,
-          mana: 50,
-          spirit: 30,
-          luck: 5,
-          comprehension: 7,
-          spiritualStone: 0
-        };
-
-        this.state.totalCultivationTime = this.state.totalCultivationTime || 0;
-      } else {
-        this.resetState();
-      }
-
-      this.appliedMinutes = parseInt(localStorage.getItem(this.APPLIED_KEY)) || 0;
-      this.loadLogs();
-    } catch (e) {
-      console.warn('读取修仙状态失败，重置为初始状态。', e);
-      this.resetState();
-    }
-  }
-
-  resetState() {
-    this.state = {
-      realmIndex: 0,
-      stageIndex: 0,
-      level: 1,
-      exp: 0,
-      tribulation: { needed: false, successRate: 0.3, failCount: 0 },
-      attributes: {
-        attack: 10,
-        defense: 8,
-        hp: 100,
-        mana: 50,
-        spirit: 30,
-        luck: 5,
-        comprehension: 7,
-        spiritualStone: 0
-      },
-      totalCultivationTime: 0
-    };
-    this.appliedMinutes = 0;
-    this.logs = [];
-    this.saveState();
-  }
-
-  saveState() {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.state));
-    localStorage.setItem(this.APPLIED_KEY, String(this.appliedMinutes || 0));
-    localStorage.setItem(this.LOGS_KEY, JSON.stringify(this.logs));
-  }
-
-  loadLogs() {
-    try {
-      const savedLogs = localStorage.getItem(this.LOGS_KEY);
-      this.logs = savedLogs ? JSON.parse(savedLogs) : [];
-    } catch (e) {
-      this.logs = [];
-    }
-  }
-
-  addLog(message) {
-    const timestamp = new Date().toLocaleTimeString();
-    this.logs.unshift(`[${timestamp}] ${message}`);
-
-    // 只保留最新的20条日志
-    if (this.logs.length > 20) {
-      this.logs = this.logs.slice(0, 20);
-    }
-
-    this.saveState();
-    this.renderLogs();
-  }
-
-  renderLogs() {
-    const logsElement = document.getElementById('cultivation-logs');
-    if (logsElement) {
-      logsElement.innerHTML = this.logs.slice(0, 10).map(log =>
-        `<div class="log-entry">${log}</div>`
-      ).join('');
-    }
-  }
-
-  renderAttributes() {
-    const attrElement = document.getElementById('player-attributes');
-    if (attrElement) {
-      attrElement.innerHTML = `
-        <div class="attr-row">
-          <span class="attr-item">⚔️ 攻击: <strong>${this.state.attributes.attack}</strong></span>
-          <span class="attr-item">🛡️ 防御: <strong>${this.state.attributes.defense}</strong></span>
-        </div>
-        <div class="attr-row">
-          <span class="attr-item">❤️ 气血: <strong>${this.state.attributes.hp}</strong></span>
-          <span class="attr-item">🔮 真元: <strong>${this.state.attributes.mana}</strong></span>
-        </div>
-        <div class="attr-row">
-          <span class="attr-item">🧠 神识: <strong>${this.state.attributes.spirit}</strong></span>
-          <span class="attr-item">🍀 福缘: <strong>${this.state.attributes.luck}</strong></span>
-        </div>
-        <div class="attr-row">
-          <span class="attr-item">💎 悟性: <strong>${this.state.attributes.comprehension}</strong></span>
-          <span class="attr-item">💰 灵石: <strong>${this.state.attributes.spiritualStone}</strong></span>
-        </div>
-      `;
-    }
-  }
-
-  getNeedExp() {
-    // 经验需求随境界和悟性调整
-    const baseExp = 5 * (this.state.realmIndex + 1) * (this.state.stageIndex + 1);
-    const comprehensionBonus = Math.max(0.5, 1 - this.state.attributes.comprehension * 0.02);
-    return Math.floor(baseExp * comprehensionBonus);
-  }
-
-  triggerAdventure() {
-    // 基于福缘属性的奇遇触发概率
-    const luckBonus = this.state.attributes.luck * 0.1;
-    const baseChance = 0.15; // 15%基础概率
-    const totalChance = Math.min(0.5, baseChance + luckBonus);
-
-    if (Math.random() < totalChance) {
-      const adventure = this.ADVENTURES[Math.floor(Math.random() * this.ADVENTURES.length)];
-      this.executeAdventure(adventure);
-    }
-  }
-
-  executeAdventure(adventure) {
-    let logMessage = `🎲 奇遇：${adventure.desc}`;
-    let rewards = [];
-
-    // 应用奖励
-    for (const [attr, value] of Object.entries(adventure.rewards)) {
-      if (attr === 'exp') {
-        this.state.exp += value;
-        rewards.push(`经验+${value}`);
-      } else if (this.state.attributes.hasOwnProperty(attr)) {
-        this.state.attributes[attr] += value;
-        const attrNames = {
-          attack: '攻击',
-          defense: '防御',
-          hp: '气血',
-          mana: '真元',
-          spirit: '神识',
-          luck: '福缘',
-          comprehension: '悟性',
-          spiritualStone: '灵石'
-        };
-        rewards.push(`${attrNames[attr]}+${value}`);
-      }
-    }
-
-    if (rewards.length > 0) {
-      logMessage += ` (${rewards.join('，')})`;
-    }
-
-    this.addLog(logMessage);
-    this.saveState();
-    this.renderCultivation();
-    this.renderAttributes();
-  }
-
-  updateCultivation(minutes) {
-    if (!minutes || minutes <= 0) return;
-
-    try {
-      // 如果已到达最高境界，仍然可以增加属性
-      this.state.totalCultivationTime += minutes;
-
-      // 每次修炼都有机会触发奇遇
-      this.triggerAdventure();
-
-      // 修炼日志
-      const logTemplate = this.CULTIVATION_LOGS[Math.floor(Math.random() * this.CULTIVATION_LOGS.length)];
-      const attrGains = [];
-
-      // 随机属性提升
-      if (Math.random() < 0.3) { // 30%概率获得属性提升
-        const attrs = ['attack', 'defense', 'hp', 'mana', 'spirit'];
-        const randomAttr = attrs[Math.floor(Math.random() * attrs.length)];
-        const gain = Math.floor(Math.random() * 3) + 1;
-        this.state.attributes[randomAttr] += gain;
-
-        const attrNames = {
-          attack: '攻击',
-          defense: '防御',
-          hp: '气血',
-          mana: '真元',
-          spirit: '神识'
-        };
-        attrGains.push(`${attrNames[randomAttr]}+${gain}`);
-      }
-
-      let logMessage = `💪 修炼：${logTemplate}`;
-      if (attrGains.length > 0) {
-        logMessage += ` (${attrGains.join('，')})`;
-      }
-      this.addLog(logMessage);
-
-      // 如果已到达最高境界，不再升级
-      if (this.state.realmIndex >= this.REALMS.length - 1) {
-        this.saveState();
-        this.renderCultivation();
-        this.renderAttributes();
-        return;
-      }
-
-      this.state.exp += minutes;
-      let needExp = this.getNeedExp();
-      let levelUps = 0;
-
-      while (!this.state.tribulation.needed && this.state.exp >= needExp && levelUps < 100) {
-        this.state.exp -= needExp;
-        levelUps++;
-
-        if (this.state.level < 10) {
-          this.state.level++;
-          this.addLog(`⬆️ 等级提升：修为更进一步，当前${this.state.level}重。`);
-        } else {
-          // 十重完成，进入下一阶段
-          this.state.level = 1;
-          if (this.state.stageIndex < 2) {
-            this.state.stageIndex++;
-            const stage = this.STAGES[this.state.stageIndex];
-            const realm = this.REALMS[this.state.realmIndex];
-            this.addLog(`🌟 阶段突破：进入${realm.name}${stage}，实力大增！`);
-
-            // 阶段突破奖励
-            this.state.attributes.attack += 10;
-            this.state.attributes.defense += 8;
-            this.state.attributes.hp += 50;
-            this.state.attributes.mana += 30;
-          } else {
-            // 阶段完整，触发渡劫
-            this.state.stageIndex = 0;
-            this.state.tribulation.needed = true;
-            this.addLog(`⚡ 境界圆满：感受到天劫将至，准备渡劫突破！`);
-            break;
-          }
-        }
-        needExp = this.getNeedExp();
-      }
-
-      this.saveState();
-      this.renderCultivation();
-      this.renderAttributes();
-    } catch (error) {
-      console.error('更新修仙进度时出错:', error);
-    }
-  }
-
-  tryTribulation() {
-    if (!this.state.tribulation.needed) return;
-
-    try {
-      const t = this.state.tribulation;
-      const rand = Math.random();
-
-      if (rand < t.successRate) {
-        // 渡劫成功
-        const oldRealmIndex = this.state.realmIndex;
-        this.state.realmIndex = Math.min(this.state.realmIndex + 1, this.REALMS.length - 1);
-        this.state.stageIndex = 0;
-        this.state.level = 1;
-        this.state.exp = 0;
-        this.state.tribulation = { needed: false, successRate: 0.3, failCount: 0 };
-
-        const newRealm = this.REALMS[this.state.realmIndex];
-        let message;
-
-        if (oldRealmIndex === this.state.realmIndex) {
-          message = `⚡ 渡劫成功！已达最高境界【${newRealm.name}】！`;
-        } else {
-          message = newRealm.breakthrough;
-
-          // 境界突破巨大奖励
-          this.state.attributes.attack += 30;
-          this.state.attributes.defense += 25;
-          this.state.attributes.hp += 200;
-          this.state.attributes.mana += 150;
-          this.state.attributes.spirit += 50;
-          this.state.attributes.luck += 2;
-          this.state.attributes.spiritualStone += 500;
-        }
-
-        this.addLog(`🎉 ${message}`);
-        alert(`⚡ 渡劫成功！\n\n${message}`);
-      } else {
-        // 渡劫失败
-        t.failCount = (t.failCount || 0) + 1;
-        t.successRate = Math.min(0.95, (t.successRate || 0.3) + 0.1);
-        const failMessage = `天劫威能恐怖，这次未能成功，但对天劫的理解更深了。`;
-        this.addLog(`💀 渡劫失败：${failMessage}`);
-        alert(`💀 渡劫失败！\n\n${failMessage}\n下一次成功率 ${(t.successRate * 100).toFixed(0)}%`);
-      }
-
-      this.saveState();
-      this.renderCultivation();
-      this.renderAttributes();
-    } catch (error) {
-      console.error('渡劫时出错:', error);
-      alert('渡劫过程中出现错误，请稍后重试！');
-    }
-  }
-
-  syncWithTotalSeconds(totalSeconds) {
-    if (typeof totalSeconds !== 'number') return;
-    const totalMinutes = Math.floor(totalSeconds / 60);
-
-    if (totalMinutes < this.appliedMinutes) {
-      this.appliedMinutes = totalMinutes;
-      localStorage.setItem(this.APPLIED_KEY, String(this.appliedMinutes));
-      return;
-    }
-
-    const delta = totalMinutes - this.appliedMinutes;
-    if (delta > 0) {
-      this.updateCultivation(delta);
-      this.appliedMinutes = totalMinutes;
-      localStorage.setItem(this.APPLIED_KEY, String(this.appliedMinutes));
-    }
-  }
-
-  handleFishReset() {
-    this.appliedMinutes = 0;
-    localStorage.setItem(this.APPLIED_KEY, '0');
-    this.resetState();
-    this.renderCultivation();
-    this.renderAttributes();
-    this.renderLogs();
-  }
-
-  renderCultivation() {
-    const statusEl = document.getElementById("cultivation-status");
-    const descEl = document.getElementById("cultivation-desc");
-    const progressEl = document.getElementById("cultivation-progress");
-    const btnTrib = document.getElementById("btn-tribulation");
-
-    if (!statusEl || !progressEl) return;
-    const realm = this.REALMS[this.state.realmIndex];
-
-    if (this.state.tribulation.needed) {
-      statusEl.innerText = `【${realm.name} 圆满】准备渡劫`;
-      descEl.innerText = `即将面临天劫考验，成功则可突破至更高境界。当前成功率：${(this.state.tribulation.successRate * 100).toFixed(0)}%`;
-      progressEl.style.width = "100%";
-      if (btnTrib) btnTrib.style.display = "inline-block";
-    } else {
-      const stage = this.STAGES[this.state.stageIndex];
-      const needExp = this.getNeedExp();
-      const percent = needExp > 0 ? Math.min(100, Math.round((this.state.exp / needExp) * 100)) : 0;
-      statusEl.innerText = `境界：${realm.name} ${stage} ${this.state.level}重`;
-      descEl.innerText = realm.desc;
-      progressEl.style.width = percent + "%";
-      if (btnTrib) btnTrib.style.display = "none";
-    }
-  }
-
-  setupEventListeners() {
-    const btn = document.getElementById('btn-tribulation');
-    if (btn) btn.addEventListener('click', () => this.tryTribulation());
-  }
-}
-// ---------------- 修仙系统管理器 结束 ----------------
 
 // 昵称验证器
 class NicknameValidator {
@@ -725,38 +223,18 @@ class ScoreLeaderboard {
     this.playerNicknameSet = false;
     this.loadLeaderboard();
     this.updateDisplay();
-    this.setupNicknameInput();
   }
 
-  setupNicknameInput() {
-    const nicknameInput = document.getElementById('player-nickname');
-    const nicknameSection = document.getElementById('nickname-section');
-
-    // 检查是否有保存的昵称
-    const savedNickname = localStorage.getItem('playerNickname');
-    if (savedNickname) {
-      this.currentPlayer = savedNickname;
-      this.playerNicknameSet = true;
-      nicknameSection.classList.add('hidden');
-      this.updateDisplay();
-    }
-
-    // 实时验证
-    nicknameInput.addEventListener('input', (e) => {
-      this.validateNicknameInput(e.target.value);
-    });
-
-    // 回车确认
-    nicknameInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        this.setPlayerNickname(e.target.value);
-      }
-    });
-  }
+  // 移除昵称输入相关功能
 
   validateNicknameInput(nickname) {
-    const input = document.getElementById('player-nickname');
     const validation = this.validator.validate(nickname);
+
+    // 如果DOM元素不存在，只返回验证结果
+    const input = document.getElementById('player-nickname');
+    if (!input) {
+      return validation.isValid;
+    }
 
     // 清除之前的错误信息
     const existingError = document.querySelector('.nickname-error');
@@ -768,10 +246,12 @@ class ScoreLeaderboard {
       input.classList.add('invalid');
 
       // 显示错误信息
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'nickname-error';
-      errorDiv.textContent = validation.errors[0];
-      input.parentNode.appendChild(errorDiv);
+      if (input.parentNode) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'nickname-error';
+        errorDiv.textContent = validation.errors[0];
+        input.parentNode.appendChild(errorDiv);
+      }
     } else {
       input.classList.remove('invalid');
     }
@@ -790,28 +270,17 @@ class ScoreLeaderboard {
     // 保存昵称到localStorage
     localStorage.setItem('playerNickname', this.currentPlayer);
 
-    // 隐藏昵称输入区域
-    document.getElementById('nickname-section').classList.add('hidden');
+    // 隐藏昵称输入区域（如果存在）
+    const nicknameSection = document.getElementById('nickname-section');
+    if (nicknameSection) {
+      nicknameSection.classList.add('hidden');
+    }
 
     this.updateDisplay();
     return true;
   }
 
-  changeNickname() {
-    // 允许用户更改昵称
-    this.playerNicknameSet = false;
-    this.currentPlayer = '';
-    localStorage.removeItem('playerNickname');
-
-    const nicknameSection = document.getElementById('nickname-section');
-    const nicknameInput = document.getElementById('player-nickname');
-
-    nicknameSection.classList.remove('hidden');
-    nicknameInput.value = '';
-    nicknameInput.focus();
-
-    this.updateDisplay();
-  }
+  // 移除更改昵称功能
 
   updateCurrentScore(score) {
     this.currentScore = Math.max(this.currentScore, score);
@@ -819,7 +288,10 @@ class ScoreLeaderboard {
   }
 
   saveScore(score) {
-    if (!this.currentPlayer || score < 10) return; // 需要昵称且分数不能太低
+    if (!this.currentPlayer || score < 10) {
+      console.log('不保存分数:', '玩家:', this.currentPlayer, '分数:', score);
+      return; // 需要昵称且分数不能太低
+    }
 
     try {
       const localRecords = this.getLocalRecords();
@@ -1027,14 +499,14 @@ class ScoreLeaderboard {
   }
 
   updateDisplay() {
-    const playerName = this.currentPlayer || '未设置昵称';
+    const playerName = this.currentPlayer || '使用修仙仙号';
     const playerNameElement = document.getElementById('current-player-name');
     const playerScoreElement = document.getElementById('current-player-score');
 
     if (playerNameElement) {
       playerNameElement.textContent = playerName;
       // 如果是默认名称，添加提示样式
-      if (playerName === '未设置昵称') {
+      if (playerName === '使用修仙仙号') {
         playerNameElement.style.opacity = '0.7';
         playerNameElement.style.fontStyle = 'italic';
       } else {
@@ -1055,7 +527,7 @@ class ScoreLeaderboard {
 
   // 检查是否可以开始游戏
   canStartGame() {
-    return this.playerNicknameSet && this.currentPlayer.length > 0;
+    return true; // 直接使用修仙系统的仙号
   }
 
   // 获取当前玩家昵称（用于游戏开始验证）
@@ -1124,6 +596,10 @@ class SnakeGame {
     this.gridSize = 20;
     this.tileCount = this.canvas.width / this.gridSize;
 
+    // 设置画布可聚焦
+    this.canvas.tabIndex = 0;
+    this.setupCanvasStyles();
+
     this.snake = [{x: 10, y: 10}];
     this.food = this.generateFood();
     this.dx = 0;
@@ -1131,13 +607,53 @@ class SnakeGame {
     this.score = 0;
     this.gameRunning = false;
     this.gamePaused = false;
+    this.isCountingDown = false;
+    this.countdownInterval = null;
 
     this.leaderboard = leaderboard;
     this.loadHighScore();
     this.setupControls();
     this.setupButtons();
+    this.updatePauseButton(); // 初始化暂停按钮状态
 
     this.draw();
+  }
+
+  setupCanvasStyles() {
+    // 添加画布的基础样式
+    this.canvas.style.border = '2px solid #ddd';
+    this.canvas.style.borderRadius = '8px';
+    this.canvas.style.outline = 'none';
+    this.canvas.style.transition = 'all 0.3s ease';
+
+    // 添加鼠标事件
+    this.canvas.addEventListener('mouseenter', () => {
+      this.canvas.style.borderColor = '#4CAF50';
+      this.canvas.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.3)';
+    });
+
+    this.canvas.addEventListener('mouseleave', () => {
+      if (document.activeElement !== this.canvas) {
+        this.canvas.style.borderColor = '#ddd';
+        this.canvas.style.boxShadow = 'none';
+      }
+    });
+
+    // 添加聚焦事件
+    this.canvas.addEventListener('focus', () => {
+      this.canvas.style.borderColor = '#2196F3';
+      this.canvas.style.boxShadow = '0 0 15px rgba(33, 150, 243, 0.4)';
+    });
+
+    this.canvas.addEventListener('blur', () => {
+      this.canvas.style.borderColor = '#ddd';
+      this.canvas.style.boxShadow = 'none';
+    });
+
+    // 点击画布时聚焦
+    this.canvas.addEventListener('click', () => {
+      this.canvas.focus();
+    });
   }
 
   loadHighScore() {
@@ -1159,24 +675,39 @@ class SnakeGame {
 
   setupControls() {
     document.addEventListener('keydown', (e) => {
-      if (!this.gameRunning || this.gamePaused) return;
+      // 防止方向键和空格键影响页面滚动
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+        e.preventDefault();
+      }
 
-      const direction = {
-        'ArrowUp': {x: 0, y: -1},
-        'ArrowDown': {x: 0, y: 1},
-        'ArrowLeft': {x: -1, y: 0},
-        'ArrowRight': {x: 1, y: 0}
-      }[e.key];
-
-      if (direction) {
-        // 防止反向移动
-        if (direction.x !== -this.dx || direction.y !== -this.dy) {
-          this.dx = direction.x;
-          this.dy = direction.y;
+      // 如果游戏未开始，方向键或空格键可以启动游戏
+      if (!this.gameRunning && !this.isCountingDown) {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+          this.startGame();
+          return;
         }
       }
 
-      if (e.key === ' ') { // 空格键暂停
+      // 游戏运行中的控制
+      if (this.gameRunning && !this.gamePaused && !this.isCountingDown) {
+        const direction = {
+          'ArrowUp': {x: 0, y: -1},
+          'ArrowDown': {x: 0, y: 1},
+          'ArrowLeft': {x: -1, y: 0},
+          'ArrowRight': {x: 1, y: 0}
+        }[e.key];
+
+        if (direction) {
+          // 防止反向移动
+          if (direction.x !== -this.dx || direction.y !== -this.dy) {
+            this.dx = direction.x;
+            this.dy = direction.y;
+          }
+        }
+      }
+
+      // 空格键暂停/继续
+      if (e.key === ' ' && this.gameRunning && !this.isCountingDown) {
         this.togglePause();
       }
     });
@@ -1189,61 +720,183 @@ class SnakeGame {
   }
 
   startGame() {
-    // 检查是否已设置昵称
-    if (!this.leaderboard.canStartGame()) {
-      const nicknameInput = document.getElementById('player-nickname');
-      const nickname = nicknameInput.value.trim();
+    console.log('尝试启动游戏...');
+    console.log('cultivationManager:', window.cultivationManager);
 
-      if (nickname) {
-        // 尝试设置昵称
-        if (this.leaderboard.setPlayerNickname(nickname)) {
-          // 昵称设置成功，开始游戏
+    // 检查修仙系统是否存在
+    if (!window.cultivationManager) {
+      console.error('修仙系统未初始化');
+      alert('😱 修仙系统未初始化，请刷新页面后重试！');
+      return;
+    }
+
+    const characterName = window.cultivationManager.getCharacterName();
+    console.log('仙号:', characterName);
+    console.log('canPlaySnake:', window.cultivationManager.canPlaySnake());
+
+    // 检查是否设置了仙号
+    if (window.cultivationManager.canPlaySnake()) {
+      console.log('可以开始游戏，仙号:', characterName);
+      // 安全设置玩家昵称
+      try {
+        this.leaderboard.setPlayerNickname(characterName);
+      } catch (error) {
+        console.warn('设置排行榜昵称失败:', error);
+      }
+      // 聚焦到画布
+      this.canvas.focus();
+      this.actuallyStartGame();
+    } else {
+      console.log('仙号未设置，无法开始游戏');
+
+      // 提供一个快速设置选项
+      const quickName = prompt('🎮 请输入您的仙号以开始游戏（或点取消去修仙属性框设置）:');
+
+      if (quickName && quickName.trim().length >= 2) {
+        console.log('使用快速设置的仙号:', quickName.trim());
+        // 尝试设置仙号
+        if (window.cultivationManager.setCharacterName(quickName.trim())) {
+          try {
+            this.leaderboard.setPlayerNickname(quickName.trim());
+          } catch (error) {
+            console.warn('设置排行榜昵称失败:', error);
+          }
+          this.canvas.focus();
           this.actuallyStartGame();
         } else {
-          // 昵称验证失败，聚焦到输入框
-          nicknameInput.focus();
-          return;
+          alert('仙号设置失败，请检查格式！');
         }
       } else {
-        // 提示用户输入昵称
-        alert('请先输入您的昵称才能开始游戏！');
-        nicknameInput.focus();
-        return;
+        alert('🎮 请先在修仙属性框中设置您的仙号才能开始游戏！');
       }
-    } else {
-      // 已有昵称，直接开始游戏
-      this.actuallyStartGame();
+      return;
     }
   }
 
   actuallyStartGame() {
-    if (!this.gameRunning) {
-      this.gameRunning = true;
-      this.gamePaused = false;
-      this.dx = 1;
-      this.dy = 0;
-      this.gameLoop();
+    if (!this.gameRunning && !this.isCountingDown) {
+      this.startCountdown();
     }
   }
 
+  startCountdown() {
+    this.isCountingDown = true;
+    let count = 3;
+
+    // 显示倒计时
+    this.showCountdown(count);
+
+    this.countdownInterval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        this.showCountdown(count);
+      } else {
+        this.showCountdown('开始!');
+        setTimeout(() => {
+          this.clearCountdown();
+          this.isCountingDown = false;
+          this.gameRunning = true;
+          this.gamePaused = false;
+          this.dx = 1;
+          this.dy = 0;
+          this.updatePauseButton(); // 更新暂停按钮状态
+          this.draw(); // 重新绘制画面
+          this.gameLoop();
+        }, 500);
+        clearInterval(this.countdownInterval);
+      }
+    }, 1000);
+  }
+
+  showCountdown(text) {
+    this.clearCanvas();
+    this.drawFood();
+    this.drawSnake();
+
+    // 绘制倒计时文字
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.ctx.fillStyle = '#fff';
+    this.ctx.font = 'bold 48px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2);
+
+    if (typeof text === 'number') {
+      this.ctx.font = '20px Arial';
+      this.ctx.fillText('准备开始...', this.canvas.width / 2, this.canvas.height / 2 + 60);
+    }
+  }
+
+  clearCountdown() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+    this.isCountingDown = false;
+  }
+
   togglePause() {
-    if (this.gameRunning) {
+    if (this.gameRunning && !this.isCountingDown) {
       this.gamePaused = !this.gamePaused;
+      this.updatePauseButton();
+
       if (!this.gamePaused) {
         this.gameLoop();
+      } else {
+        // 显示暂停界面
+        this.showPauseScreen();
       }
     }
   }
 
+  updatePauseButton() {
+    const pauseBtn = document.getElementById('pause-btn');
+    if (pauseBtn) {
+      if (!this.gameRunning) {
+        // 游戏未开始
+        pauseBtn.textContent = '暂停';
+        pauseBtn.style.backgroundColor = '#ccc';
+        pauseBtn.disabled = true;
+      } else if (this.gamePaused) {
+        // 游戏暂停中
+        pauseBtn.textContent = '继续';
+        pauseBtn.style.backgroundColor = '#4CAF50';
+        pauseBtn.disabled = false;
+      } else {
+        // 游戏运行中
+        pauseBtn.textContent = '暂停';
+        pauseBtn.style.backgroundColor = '#ff9800';
+        pauseBtn.disabled = false;
+      }
+    }
+  }
+
+  showPauseScreen() {
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.ctx.fillStyle = '#fff';
+    this.ctx.font = 'bold 36px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('游戏暂停', this.canvas.width / 2, this.canvas.height / 2 - 20);
+
+    this.ctx.font = '18px Arial';
+    this.ctx.fillText('按空格键继续游戏', this.canvas.width / 2, this.canvas.height / 2 + 20);
+  }
+
   resetGame() {
+    this.clearCountdown();
     this.gameRunning = false;
     this.gamePaused = false;
+    this.isCountingDown = false;
     this.snake = [{x: 10, y: 10}];
     this.food = this.generateFood();
     this.dx = 0;
     this.dy = 0;
     this.score = 0;
     document.getElementById('score').textContent = this.score;
+    this.updatePauseButton(); // 重置暂停按钮状态
     this.draw();
   }
 
@@ -1350,12 +1003,46 @@ class SnakeGame {
     this.clearCanvas();
     this.drawFood();
     this.drawSnake();
+
+    // 如果游戏未开始，显示提示信息
+    if (!this.gameRunning && !this.isCountingDown) {
+      this.showStartHint();
+    }
+  }
+
+  showStartHint() {
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.ctx.fillStyle = '#fff';
+    this.ctx.font = 'bold 24px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('🐍 贪吃蛇游戏', this.canvas.width / 2, this.canvas.height / 2 - 60);
+
+    this.ctx.font = '18px Arial';
+    this.ctx.fillText('按任意方向键或空格键开始游戏', this.canvas.width / 2, this.canvas.height / 2 - 20);
+
+    this.ctx.font = '14px Arial';
+    this.ctx.fillStyle = '#ccc';
+    this.ctx.fillText('方向键控制移动 | 空格键暂停', this.canvas.width / 2, this.canvas.height / 2 + 20);
+    this.ctx.fillText('点击画布聚焦后即可使用键盘控制', this.canvas.width / 2, this.canvas.height / 2 + 40);
   }
 }
 
 // 初始化（注意：先创建修仙管理器，以便计时器能同步）
-const cultivationManager = new CultivationManager();
-window.cultivationManager = cultivationManager;
+// 修仙系统现在从独立文件加载
+let cultivationManager = null;
+try {
+  if (typeof CultivationManager !== 'undefined') {
+    cultivationManager = new CultivationManager();
+    window.cultivationManager = cultivationManager;
+    console.log('修仙系统初始化成功');
+  } else {
+    console.error('CultivationManager 类未找到');
+  }
+} catch (error) {
+  console.error('修仙系统初始化失败:', error);
+}
 
 const fishTimeManager = new FishTimeManager();
 const scoreLeaderboard = new ScoreLeaderboard();
@@ -1364,9 +1051,4 @@ const snakeGame = new SnakeGame(scoreLeaderboard);
 // 绑定重置按钮事件
 document.getElementById('reset-fish-time').addEventListener('click', () => {
   fishTimeManager.manualReset();
-});
-
-// 绑定更改昵称按钮事件
-document.getElementById('change-nickname-btn').addEventListener('click', () => {
-  scoreLeaderboard.changeNickname();
 });
