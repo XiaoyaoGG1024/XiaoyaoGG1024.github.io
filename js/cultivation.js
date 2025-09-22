@@ -1,6 +1,7 @@
 // 修仙系统管理器
 class CultivationManager {
   constructor() {
+    console.log('修仙系统初始化开始...');
     // 境界系统 - 更具修仙小说风格
     this.REALMS = [
       {
@@ -120,8 +121,48 @@ class CultivationManager {
 
     // 初始化
     this.loadState();
-    this.renderCultivation();
+
+    // 确保 DOM 元素存在后再渲染
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        this.renderAllWithRetry();
+      });
+    } else {
+      // DOM 已经加载完成，立即尝试渲染
+      this.renderAllWithRetry();
+    }
+
     this.setupEventListeners();
+    console.log('修仙系统初始化完成');
+  }
+
+  renderAll() {
+    console.log('开始渲染修仙系统界面...');
+    this.renderCultivation();
+    this.renderAttributes();
+    console.log('修仙系统界面渲染完成');
+  }
+
+  renderAllWithRetry(attempt = 1, maxAttempts = 10) {
+    console.log(`尝试渲染修仙系统界面... (第${attempt}次)`);
+
+    // 检查关键DOM元素是否存在
+    const cultivationStatus = document.getElementById("cultivation-status");
+    const playerAttributes = document.getElementById('player-attributes');
+
+    if (!cultivationStatus || !playerAttributes) {
+      if (attempt < maxAttempts) {
+        console.log(`DOM元素未就绪，${50}ms后重试...`);
+        setTimeout(() => this.renderAllWithRetry(attempt + 1, maxAttempts), 50);
+        return;
+      } else {
+        console.warn('DOM元素未找到，渲染失败');
+        return;
+      }
+    }
+
+    // DOM元素已就绪，开始渲染
+    this.renderAll();
   }
 
   loadState() {
@@ -283,6 +324,9 @@ class CultivationManager {
             <button id="edit-character-name" style="background: #FFC107; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">⚙️ 修改</button>
             <button id="save-character-name" style="display: none; background: #4CAF50; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">✔️ 确定</button>
             <button id="cancel-character-name" style="display: none; background: #f44336; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">❌ 取消</button>
+            <button id="export-save" style="background: #2196F3; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 12px; margin-left: 5px;">💾 导出</button>
+            <button id="import-save" style="background: #9C27B0; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">📁 导入</button>
+            <input type="file" id="save-file-input" accept=".json" style="display: none;">
           </div>
           <div style="font-size: 11px; color: #666; margin-top: 5px;">📝 设置仙号后可解锁贪吃蛇游戏，不设置不影响修仙进度</div>
         </div>
@@ -307,6 +351,7 @@ class CultivationManager {
       // 重新设置角色名字显示
       this.renderCharacterName();
       this.setupCharacterNameEvents();
+      this.setupSaveEvents(); // 设置导入导出事件
     }
   }
 
@@ -390,7 +435,7 @@ class CultivationManager {
     // 基于福缘属性的奇遇触发概率
     const luckBonus = this.state.attributes.luck * 0.1;
     const baseChance = 0.15; // 15%基础概率
-    const totalChance = Math.min(0.5, baseChance + luckBonus);
+    const totalChance = 1 - Math.exp(-(baseChance + luckBonus))
 
     if (Math.random() < totalChance) {
       const adventure = this.ADVENTURES[Math.floor(Math.random() * this.ADVENTURES.length)];
@@ -631,6 +676,178 @@ class CultivationManager {
   setupEventListeners() {
     const btn = document.getElementById('btn-tribulation');
     if (btn) btn.addEventListener('click', () => this.tryTribulation());
+  }
+
+  // 设置导入导出事件
+  setupSaveEvents() {
+    const exportBtn = document.getElementById('export-save');
+    const importBtn = document.getElementById('import-save');
+    const fileInput = document.getElementById('save-file-input');
+
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => this.exportSave());
+    }
+
+    if (importBtn) {
+      importBtn.addEventListener('click', () => {
+        if (fileInput) {
+          fileInput.click();
+        }
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          this.importSave(file);
+        }
+      });
+    }
+  }
+
+  // 导出存档
+  exportSave() {
+    try {
+      const saveData = {
+        version: '2.0',
+        timestamp: Date.now(),
+        date: new Date().toLocaleString(),
+        cultivation: {
+          state: this.state,
+          appliedMinutes: this.appliedMinutes,
+          logs: this.logs
+        },
+        characterName: this.state.characterName || '',
+        description: '修仙系统存档文件'
+      };
+
+      const jsonString = JSON.stringify(saveData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      const fileName = `修仙存档_${this.state.characterName || '未命名'}_${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert('💾 存档导出成功！\n\n文件名：' + fileName);
+      console.log('存档导出成功:', saveData);
+    } catch (error) {
+      console.error('导出存档失败:', error);
+      alert('❗ 导出存档失败，请稍后重试！');
+    }
+  }
+
+  // 导入存档
+  importSave(file) {
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const saveData = JSON.parse(e.target.result);
+
+          // 验证数据格式
+          if (!this.validateSaveData(saveData)) {
+            alert('❗ 存档文件格式错误或损坏！');
+            return;
+          }
+
+          // 确认导入
+          const confirmMsg = `確定要导入以下存档吗？\n\n` +
+            `👤 仙号：${saveData.cultivation.state.characterName || '未设置'}\n` +
+            `⚔️ 境界：${this.REALMS[saveData.cultivation.state.realmIndex].name} ${this.STAGES[saveData.cultivation.state.stageIndex]} ${saveData.cultivation.state.level}重\n` +
+            `🔥 修炼时间：${Math.floor(saveData.cultivation.state.totalCultivationTime)}分钟\n` +
+            `📅 存档时间：${saveData.date}\n\n` +
+            `⚠️ 注意：导入将覆盖当前所有进度！`;
+
+          if (confirm(confirmMsg)) {
+            this.loadSaveData(saveData);
+            alert('🎉 存档导入成功！\n\n欢迎回来，' + (saveData.cultivation.state.characterName || '道友') + '！');
+          }
+        } catch (parseError) {
+          console.error('解析存档文件失败:', parseError);
+          alert('❗ 存档文件格式错误，无法解析！');
+        }
+      };
+      reader.readAsText(file);
+    } catch (error) {
+      console.error('读取存档文件失败:', error);
+      alert('❗ 读取存档文件失败！');
+    }
+  }
+
+  // 验证存档数据
+  validateSaveData(saveData) {
+    try {
+      // 检查必要的字段
+      if (!saveData.cultivation || !saveData.cultivation.state) {
+        return false;
+      }
+
+      const state = saveData.cultivation.state;
+
+      // 检查境界数据
+      if (typeof state.realmIndex !== 'number' ||
+          state.realmIndex < 0 ||
+          state.realmIndex >= this.REALMS.length) {
+        return false;
+      }
+
+      // 检查属性数据
+      if (!state.attributes || typeof state.attributes !== 'object') {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('验证存档数据失败:', error);
+      return false;
+    }
+  }
+
+  // 加载存档数据
+  loadSaveData(saveData) {
+    try {
+      // 备份当前数据
+      const backup = {
+        state: { ...this.state },
+        appliedMinutes: this.appliedMinutes,
+        logs: [...this.logs]
+      };
+
+      // 加载新数据
+      this.state = { ...saveData.cultivation.state };
+      this.appliedMinutes = saveData.cultivation.appliedMinutes || 0;
+      this.logs = saveData.cultivation.logs || [];
+
+      // 确保所有属性存在
+      this.state.attributes = this.state.attributes || {
+        attack: 10,
+        defense: 8,
+        hp: 100,
+        mana: 50,
+        spirit: 30,
+        luck: 5,
+        comprehension: 7,
+        spiritualStone: 0
+      };
+
+      // 保存到本地存储
+      this.saveState();
+
+      // 刷新界面
+      this.renderAll();
+
+      console.log('存档导入成功:', saveData);
+    } catch (error) {
+      console.error('加载存档数据失败:', error);
+      alert('❗ 导入存档失败，请检查文件格式！');
+    }
   }
 }
 
