@@ -858,42 +858,32 @@ class CultivationManager {
   }
 
   // 数据迁移 - 支持多版本向后和向前兼容
-  migrateSaveData(rawData) {
-    try {
-      // 检测数据版本
-      const version = this.detectSaveVersion(rawData);
-      console.log('检测到存档版本:', version);
-
-      // 获取当前系统支持的版本
-      const currentVersion = 3; // 当前系统版本
-
-      // 根据版本进行迁移
-      if (version.major <= currentVersion) {
-        // 处理旧版本或当前版本
-        switch (version.major) {
-          case 0:
-            console.log('极旧版本，使用通用迁移');
-            return this.tryGenericMigration(rawData);
-          case 1:
-            return this.migrateFromV1(rawData);
-          case 2:
-            return this.migrateFromV2(rawData);
-          case 3:
-            return this.migrateFromV3(rawData);
-          default:
-            console.warn('未知的旧版本:', version);
-            return this.tryGenericMigration(rawData);
-        }
-      } else {
-        // 处理未来版本（向前兼容）
-        console.log(`检测到未来版本 v${version.major}，尝试向前兼容处理`);
-        return this.migrateFromFutureVersion(rawData, version);
-      }
-    } catch (error) {
-      console.error('数据迁移失败:', error);
-      return null;
-    }
+ migrate(rawData, version) {
+  let migratedData;
+  switch (version.major) {
+    case 1:
+      migratedData = this.migrateFromV1(rawData);
+      break;
+    case 2:
+      migratedData = this.migrateFromV2(rawData);
+      break;
+    case 3:
+      migratedData = this.migrateFromV3(rawData, version.minor);
+      break;
+    default:
+      migratedData = this.tryGenericMigration(rawData);
   }
+
+  // ✅ 状态补全
+  if (migratedData?.cultivation?.state) {
+    migratedData.cultivation.state = this.smartStateCompletion(migratedData.cultivation.state);
+    // ✅ 修复与边界检查（就地修改，不覆盖 migratedData）
+    this.fixAndValidateState(migratedData.cultivation.state);
+  }
+
+  return migratedData;
+}
+
 
   // 检测存档版本
   detectSaveVersion(data) {
