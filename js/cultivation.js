@@ -786,22 +786,30 @@ class CultivationManager {
   // 导入存档
   importSave(file) {
     try {
+      console.log('开始导入存档文件:', file.name);
+
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const rawData = JSON.parse(e.target.result);
+          console.log('原始存档数据:', rawData);
 
           // 识别并迁移存档格式
           const migratedData = this.migrateSaveData(rawData);
 
           if (!migratedData) {
-            alert('❗ 存档文件格式不支持或已损坏！');
+            console.error('迁移失败，数据格式不支持');
+            alert('❗ 存档文件格式不支持或已损坏！\n\n支持的格式：修仙系统 v1.0+ 导出的JSON文件');
             return;
           }
 
+          console.log('迁移后的数据:', migratedData);
+
           // 验证迁移后的数据
-          if (!this.validateSaveData(migratedData)) {
-            alert('❗ 存档数据验证失败，可能存在兼容性问题！');
+          const validationResult = this.validateSaveData(migratedData);
+          if (!validationResult) {
+            console.error('验证失败');
+            alert('❗ 存档数据验证失败，可能存在兼容性问题！\n\n请确保文件是完整的修仙系统存档。');
             return;
           }
 
@@ -809,40 +817,77 @@ class CultivationManager {
           const confirmMsg = this.generateImportConfirmation(migratedData, rawData);
 
           if (confirm(confirmMsg)) {
-            this.loadSaveData(migratedData);
-            const welcomeMsg = this.generateWelcomeMessage(migratedData, rawData);
-            alert(welcomeMsg);
+            try {
+              this.loadSaveData(migratedData);
+              const welcomeMsg = this.generateWelcomeMessage(migratedData, rawData);
+              alert(welcomeMsg);
+              console.log('存档导入成功');
+            } catch (loadError) {
+              console.error('加载存档数据失败:', loadError);
+              alert('❗ 存档导入失败！数据可能已损坏，已还原原有进度。');
+            }
           }
         } catch (parseError) {
           console.error('解析存档文件失败:', parseError);
-          alert('❗ 存档文件格式错误，无法解析！请检查文件是否完整。');
+
+          // 提供更详细的错误信息
+          let errorMsg = '❗ 存档文件格式错误，无法解析！\n\n';
+          if (parseError.message.includes('Unexpected token')) {
+            errorMsg += '文件内容不是有效的JSON格式。';
+          } else if (parseError.message.includes('Unexpected end')) {
+            errorMsg += '文件内容不完整，可能在传输过程中被截断。';
+          } else {
+            errorMsg += '文件内容损坏或格式不正确。';
+          }
+          errorMsg += '\n\n请确保：\n1. 文件是通过修仙系统导出的\n2. 文件未被修改或损坏\n3. 文件扩展名为.json';
+
+          alert(errorMsg);
         }
       };
-      reader.readAsText(file);
+
+      reader.onerror = (error) => {
+        console.error('文件读取失败:', error);
+        alert('❗ 文件读取失败！请重试或检查文件是否损坏。');
+      };
+
+      reader.readAsText(file, 'UTF-8');
     } catch (error) {
       console.error('读取存档文件失败:', error);
-      alert('❗ 读取存档文件失败！');
+      alert('❗ 读取存档文件失败！请检查文件格式和完整性。');
     }
   }
 
-  // 数据迁移 - 支持多版本向后兼容
+  // 数据迁移 - 支持多版本向后和向前兼容
   migrateSaveData(rawData) {
     try {
       // 检测数据版本
       const version = this.detectSaveVersion(rawData);
       console.log('检测到存档版本:', version);
 
+      // 获取当前系统支持的版本
+      const currentVersion = 3; // 当前系统版本
+
       // 根据版本进行迁移
-      switch (version.major) {
-        case 1:
-          return this.migrateFromV1(rawData);
-        case 2:
-          return this.migrateFromV2(rawData);
-        case 3:
-          return this.migrateFromV3(rawData);
-        default:
-          console.warn('未知的存档版本:', version);
-          return this.tryGenericMigration(rawData);
+      if (version.major <= currentVersion) {
+        // 处理旧版本或当前版本
+        switch (version.major) {
+          case 0:
+            console.log('极旧版本，使用通用迁移');
+            return this.tryGenericMigration(rawData);
+          case 1:
+            return this.migrateFromV1(rawData);
+          case 2:
+            return this.migrateFromV2(rawData);
+          case 3:
+            return this.migrateFromV3(rawData);
+          default:
+            console.warn('未知的旧版本:', version);
+            return this.tryGenericMigration(rawData);
+        }
+      } else {
+        // 处理未来版本（向前兼容）
+        console.log(`检测到未来版本 v${version.major}，尝试向前兼容处理`);
+        return this.migrateFromFutureVersion(rawData, version);
       }
     } catch (error) {
       console.error('数据迁移失败:', error);
@@ -965,25 +1010,66 @@ class CultivationManager {
   migrateFromV2(rawData) {
     console.log('从V2格式迁移数据');
     try {
+      const originalCultivation = rawData.cultivation || rawData;
+      const originalState = originalCultivation.state || originalCultivation;
+
+      // 确保属性完整性
+      const defaultAttributes = {
+        attack: 10,
+        defense: 8,
+        hp: 100,
+        mana: 50,
+        spirit: 30,
+        luck: 5,
+        comprehension: 7,
+        spiritualStone: 0
+      };
+
+      // 合并属性
+      const mergedAttributes = { ...defaultAttributes };
+      if (originalState.attributes) {
+        for (const [key, value] of Object.entries(originalState.attributes)) {
+          if (typeof value === 'number' && !isNaN(value)) {
+            mergedAttributes[key] = value;
+          }
+        }
+      }
+
       const migratedData = {
         version: "3.0.0",
         formatVersion: 3,
         timestamp: Date.now(),
         date: new Date().toLocaleString('zh-CN'),
         gameVersion: "修仙系统 v3.0",
-        cultivation: rawData.cultivation || rawData,
+        cultivation: {
+          state: {
+            // 确保所有必要字段存在且类型正确
+            realmIndex: Math.max(0, parseInt(originalState.realmIndex) || 0),
+            stageIndex: Math.max(0, parseInt(originalState.stageIndex) || 0),
+            level: Math.max(1, parseInt(originalState.level) || 1),
+            exp: Math.max(0, parseInt(originalState.exp) || 0),
+            tribulation: originalState.tribulation || { needed: false, successRate: 0.3, failCount: 0 },
+            attributes: mergedAttributes,
+            totalCultivationTime: Math.max(0, parseInt(originalState.totalCultivationTime) || 0),
+            characterName: (typeof originalState.characterName === 'string' ? originalState.characterName : '') || ''
+          },
+          appliedMinutes: Math.max(0, parseInt(originalCultivation.appliedMinutes) || 0),
+          logs: Array.isArray(originalCultivation.logs) ? originalCultivation.logs : []
+        },
         compatibility: {
           minSupportedVersion: "1.0.0",
           requiredFeatures: ["基础修仙", "属性系统", "渡劫系统"],
           optionalFeatures: ["奇遇系统", "日志系统"]
         },
         metadata: {
-          characterName: rawData.cultivation?.state?.characterName || "道友",
+          characterName: (typeof originalState.characterName === 'string' ? originalState.characterName : '') || "道友",
           description: "修仙系统存档文件 - 从V2迁移",
           exportedBy: "CultivationManager v3.0",
           platform: "Web"
         }
       };
+
+      console.log('V2迁移完成:', migratedData);
       return migratedData;
     } catch (error) {
       console.error('V2迁移失败:', error);
@@ -995,6 +1081,31 @@ class CultivationManager {
   migrateFromV1(rawData) {
     console.log('从V1格式迁移数据');
     try {
+      // 处理原始状态数据
+      const originalState = rawData.cultivation?.state || rawData;
+
+      // 确保属性完整性
+      const defaultAttributes = {
+        attack: 10,
+        defense: 8,
+        hp: 100,
+        mana: 50,
+        spirit: 30,
+        luck: 5,
+        comprehension: 7,
+        spiritualStone: 0
+      };
+
+      // 合并属性，保留原有值，补全缺失的
+      const mergedAttributes = { ...defaultAttributes };
+      if (originalState.attributes) {
+        for (const [key, value] of Object.entries(originalState.attributes)) {
+          if (typeof value === 'number' && !isNaN(value)) {
+            mergedAttributes[key] = value;
+          }
+        }
+      }
+
       const migratedData = {
         version: "3.0.0",
         formatVersion: 3,
@@ -1002,9 +1113,25 @@ class CultivationManager {
         date: new Date().toLocaleString('zh-CN'),
         gameVersion: "修仙系统 v3.0",
         cultivation: {
-          state: rawData.cultivation?.state || rawData,
-          appliedMinutes: rawData.cultivation?.appliedMinutes || 0,
-          logs: rawData.cultivation?.logs || []
+          state: {
+            // 基础字段，确保数据类型正确
+            realmIndex: Math.max(0, parseInt(originalState.realmIndex) || 0),
+            stageIndex: Math.max(0, parseInt(originalState.stageIndex) || 0),
+            level: Math.max(1, parseInt(originalState.level) || 1),
+            exp: Math.max(0, parseInt(originalState.exp) || 0),
+
+            // 渡劫数据，确保结构完整
+            tribulation: originalState.tribulation || { needed: false, successRate: 0.3, failCount: 0 },
+
+            // 属性数据，确保所有属性都存在
+            attributes: mergedAttributes,
+
+            // 其他字段
+            totalCultivationTime: Math.max(0, parseInt(originalState.totalCultivationTime) || 0),
+            characterName: (typeof originalState.characterName === 'string' ? originalState.characterName : '') || ''
+          },
+          appliedMinutes: Math.max(0, parseInt(rawData.cultivation?.appliedMinutes) || 0),
+          logs: Array.isArray(rawData.cultivation?.logs) ? rawData.cultivation.logs : []
         },
         compatibility: {
           minSupportedVersion: "1.0.0",
@@ -1012,12 +1139,14 @@ class CultivationManager {
           optionalFeatures: ["渡劫系统", "奇遇系统", "日志系统"]
         },
         metadata: {
-          characterName: rawData.cultivation?.state?.characterName || "道友",
+          characterName: (typeof originalState.characterName === 'string' ? originalState.characterName : '') || "道友",
           description: "修仙系统存档文件 - 从V1迁移",
           exportedBy: "CultivationManager v3.0",
           platform: "Web"
         }
       };
+
+      console.log('V1迁移完成:', migratedData);
       return migratedData;
     } catch (error) {
       console.error('V1迁移失败:', error);
@@ -1035,18 +1164,61 @@ class CultivationManager {
       }
 
       // 如果直接是状态数据，包装为V1格式再迁移
-      if (rawData.realmIndex !== undefined || rawData.attributes) {
+      if (rawData.realmIndex !== undefined || rawData.attributes || rawData.level !== undefined) {
         const wrappedData = {
           cultivation: {
             state: rawData,
-            appliedMinutes: 0,
-            logs: []
+            appliedMinutes: rawData.appliedMinutes || 0,
+            logs: rawData.logs || []
           }
         };
         return this.migrateFromV1(wrappedData);
       }
 
-      console.warn('无法识别的数据格式');
+      // 尝试检测其他可能的数据结构
+      if (rawData.state) {
+        const wrappedData = {
+          cultivation: {
+            state: rawData.state,
+            appliedMinutes: rawData.appliedMinutes || 0,
+            logs: rawData.logs || []
+          }
+        };
+        return this.migrateFromV1(wrappedData);
+      }
+
+      // 最后的兜底：如果数据中有任何修仙相关的字段，尝试构建最小数据结构
+      if (rawData.name || rawData.exp !== undefined || rawData.characterName) {
+        console.log('尝试从最小数据结构迁移');
+        const minimalState = {
+          realmIndex: rawData.realmIndex || 0,
+          stageIndex: rawData.stageIndex || 0,
+          level: rawData.level || 1,
+          exp: rawData.exp || 0,
+          characterName: rawData.characterName || rawData.name || '',
+          attributes: rawData.attributes || {
+            attack: 10,
+            defense: 8,
+            hp: 100,
+            mana: 50,
+            spirit: 30,
+            luck: 5,
+            comprehension: 7,
+            spiritualStone: 0
+          }
+        };
+
+        const wrappedData = {
+          cultivation: {
+            state: minimalState,
+            appliedMinutes: rawData.appliedMinutes || 0,
+            logs: rawData.logs || []
+          }
+        };
+        return this.migrateFromV1(wrappedData);
+      }
+
+      console.warn('无法识别的数据格式:', Object.keys(rawData));
       return null;
     } catch (error) {
       console.error('通用迁移失败:', error);
@@ -1054,8 +1226,301 @@ class CultivationManager {
     }
   }
 
-  // 修复和验证状态数据
+  // 生成导入确认信息
+  generateImportConfirmation(migratedData, rawData) {
+    try {
+      const cultivation = migratedData.cultivation;
+      const state = cultivation.state;
+
+      let confirmMessage = '📁 检测到修仙存档文件！\n\n';
+
+      // 基本信息
+      if (state.characterName) {
+        confirmMessage += `🧙‍♂️ 仙号：${state.characterName}\n`;
+      }
+
+      // 境界信息
+      if (this.REALMS && this.REALMS[state.realmIndex]) {
+        const realm = this.REALMS[state.realmIndex];
+        const stage = this.STAGES[state.stageIndex] || '前期';
+        confirmMessage += `⚡ 境界：${realm.name} ${stage} ${state.level}重\n`;
+      }
+
+      // 属性信息
+      if (state.attributes) {
+        confirmMessage += `💪 总属性：攻击${state.attributes.attack} 防御${state.attributes.defense} 气血${state.attributes.hp}\n`;
+      }
+
+      // 修炼时间
+      if (state.totalCultivationTime) {
+        const hours = Math.floor(state.totalCultivationTime / 60);
+        confirmMessage += `⏰ 修炼时间：${hours}小时${state.totalCultivationTime % 60}分钟\n`;
+      }
+
+      // 版本信息
+      const version = migratedData.version || rawData.version || '未知版本';
+      confirmMessage += `📋 版本：${version}\n`;
+
+      // 兼容性提示
+      if (migratedData.formatVersion !== 3) {
+        confirmMessage += '\n⚠️ 此存档版本较旧，将自动升级为最新格式\n';
+      }
+
+      confirmMessage += '\n❓ 确定要导入此存档吗？\n（当前进度将被覆盖）';
+
+      return confirmMessage;
+    } catch (error) {
+      console.error('生成确认信息失败:', error);
+      return '📁 检测到修仙存档文件！\n\n确定要导入此存档吗？（当前进度将被覆盖）';
+    }
+  }
+
+  // 生成欢迎消息
+  generateWelcomeMessage(migratedData, rawData) {
+    try {
+      const cultivation = migratedData.cultivation;
+      const state = cultivation.state;
+
+      let welcomeMessage = '✨ 存档导入成功！\n\n';
+
+      // 欢迎回来
+      if (state.characterName) {
+        welcomeMessage += `🎉 欢迎回来，${state.characterName}道友！\n`;
+      } else {
+        welcomeMessage += `🎉 欢迎回来，道友！\n`;
+      }
+
+      // 当前状态
+      if (this.REALMS && this.REALMS[state.realmIndex]) {
+        const realm = this.REALMS[state.realmIndex];
+        const stage = this.STAGES[state.stageIndex] || '前期';
+        welcomeMessage += `⚡ 当前境界：${realm.name} ${stage} ${state.level}重\n`;
+      }
+
+      // 兼容性升级提示
+      if (migratedData.formatVersion !== 3) {
+        welcomeMessage += '\n🔄 存档已自动升级为最新格式\n';
+        welcomeMessage += '💫 新功能已激活，继续您的修仙之路！\n';
+      }
+
+      // 如果有新属性被初始化
+      const hasNewAttributes = this.checkForNewAttributes(state, rawData);
+      if (hasNewAttributes.length > 0) {
+        welcomeMessage += `\n🆕 新增属性已初始化：${hasNewAttributes.join('、')}\n`;
+      }
+
+      welcomeMessage += '\n🚀 修仙之路，继续前行！';
+
+      return welcomeMessage;
+    } catch (error) {
+      console.error('生成欢迎消息失败:', error);
+      return '✨ 存档导入成功！\n\n🚀 修仙之路，继续前行！';
+    }
+  }
+
+  // 检查新增属性
+  checkForNewAttributes(currentState, originalData) {
+    const newAttributes = [];
+    const defaultAttributes = {
+      attack: 10,
+      defense: 8,
+      hp: 100,
+      mana: 50,
+      spirit: 30,
+      luck: 5,
+      comprehension: 7,
+      spiritualStone: 0
+    };
+
+    try {
+      const originalState = originalData.cultivation?.state || originalData.state || originalData;
+      const originalAttributes = originalState.attributes || {};
+
+      for (const [key, defaultValue] of Object.entries(defaultAttributes)) {
+        if (currentState.attributes[key] === defaultValue &&
+            originalAttributes[key] === undefined) {
+          const attrNames = {
+            attack: '攻击',
+            defense: '防御',
+            hp: '气血',
+            mana: '真元',
+            spirit: '神识',
+            luck: '福缘',
+            comprehension: '悟性',
+            spiritualStone: '灵石'
+          };
+          newAttributes.push(attrNames[key] || key);
+        }
+      }
+    } catch (error) {
+      console.warn('检查新属性时出错:', error);
+    }
+
+    return newAttributes;
+  }
+
+  // 获取完整的默认属性模板（包含未来可能的扩展）
+  getDefaultAttributesTemplate() {
+    return {
+      // 基础战斗属性
+      attack: 10,
+      defense: 8,
+      hp: 100,
+      mana: 50,
+
+      // 修仙专属属性
+      spirit: 30,
+      luck: 5,
+      comprehension: 7,
+      spiritualStone: 0,
+
+      // 预留未来功能的属性（默认值为0，不影响现有逻辑）
+      charm: 0,          // 魅力值（可能用于社交功能）
+      reputation: 0,     // 声望值（可能用于门派系统）
+      karma: 0,          // 业力值（可能用于因果系统）
+      mentalPower: 0,    // 心力值（可能用于高级功法）
+      bloodline: 0,      // 血脉强度（可能用于血脉觉醒）
+      divinity: 0,       // 神性值（可能用于飞升系统）
+      formation: 0,      // 阵法造诣（可能用于阵法系统）
+      alchemy: 0,        // 炼丹造诣（可能用于炼丹系统）
+      artifactCrafting: 0, // 炼器造诣（可能用于炼器系统）
+      talisman: 0        // 符箓造诣（可能用于符箓系统）
+    };
+  }
+
+  // 获取完整的默认状态模板
+  getDefaultStateTemplate() {
+    return {
+      // 基础修仙数据
+      realmIndex: 0,
+      stageIndex: 0,
+      level: 1,
+      exp: 0,
+
+      // 渡劫系统
+      tribulation: { needed: false, successRate: 0.3, failCount: 0 },
+
+      // 属性系统
+      attributes: this.getDefaultAttributesTemplate(),
+
+      // 时间统计
+      totalCultivationTime: 0,
+
+      // 角色信息
+      characterName: '',
+
+      // 预留未来功能的字段（默认值不影响现有逻辑）
+      sect: '',              // 门派信息
+      title: '',             // 称号信息
+      companion: null,       // 伙伴信息
+      inventory: [],         // 物品背包
+      techniques: [],        // 已学功法
+      achievements: [],      // 成就系统
+      relationships: {},     // 关系系统
+      quests: [],           // 任务系统
+      battleRecord: {       // 战斗记录
+        wins: 0,
+        losses: 0,
+        draws: 0
+      },
+      lifeEvents: [],       // 人生事件记录
+      settings: {           // 个人设置
+        autoSave: true,
+        notifications: true
+      }
+    };
+  }
+
+  // 智能属性补全函数
+  smartAttributeCompletion(targetAttributes, sourceAttributes = {}) {
+    const completed = { ...targetAttributes };
+
+    // 遍历源属性，保留有效值
+    for (const [key, value] of Object.entries(sourceAttributes)) {
+      if (completed.hasOwnProperty(key)) {
+        // 如果目标模板中有这个属性，保留原值（如果有效）
+        if (typeof value === 'number' && !isNaN(value) && value >= 0) {
+          completed[key] = value;
+        }
+      } else {
+        // 如果目标模板中没有这个属性，但源数据有，也保留（向前兼容未来功能）
+        if (typeof value === 'number' && !isNaN(value)) {
+          completed[key] = value;
+          console.log(`保留未知属性 ${key}: ${value}（可能来自更高版本）`);
+        }
+      }
+    }
+
+    return completed;
+  }
+
+  // 智能状态补全函数
+  smartStateCompletion(sourceState = {}) {
+    const defaultState = this.getDefaultStateTemplate();
+    const completed = { ...defaultState };
+
+    // 遍历源状态，智能补全
+    for (const [key, value] of Object.entries(sourceState)) {
+      if (key === 'attributes') {
+        // 特殊处理属性对象
+        completed.attributes = this.smartAttributeCompletion(
+          defaultState.attributes,
+          value || {}
+        );
+      } else if (key === 'tribulation') {
+        // 特殊处理渡劫对象
+        completed.tribulation = {
+          ...defaultState.tribulation,
+          ...(typeof value === 'object' && value !== null ? value : {})
+        };
+      } else if (completed.hasOwnProperty(key)) {
+        // 保留已知字段的有效值
+        if (this.isValidValue(key, value)) {
+          completed[key] = value;
+        }
+      } else {
+        // 保留未知字段（可能来自更高版本）
+        completed[key] = value;
+        console.log(`保留未知字段 ${key}: ${JSON.stringify(value)}（可能来自更高版本）`);
+      }
+    }
+
+    return completed;
+  }
+
+  // 验证字段值是否有效
+  isValidValue(key, value) {
+    const validators = {
+      realmIndex: (v) => Number.isInteger(v) && v >= 0,
+      stageIndex: (v) => Number.isInteger(v) && v >= 0,
+      level: (v) => Number.isInteger(v) && v >= 1,
+      exp: (v) => Number.isInteger(v) && v >= 0,
+      totalCultivationTime: (v) => Number.isInteger(v) && v >= 0,
+      characterName: (v) => typeof v === 'string'
+    };
+
+    const validator = validators[key];
+    return validator ? validator(value) : value !== undefined && value !== null;
+  }
+
+  // 修复和验证状态数据（增强版）
   fixAndValidateState(state) {
+    console.log('开始智能状态修复，原始数据:', state);
+
+    // 使用智能补全函数
+    const fixedState = this.smartStateCompletion(state);
+
+    // 额外的边界检查和修复
+    this.performBoundaryChecks(fixedState);
+
+    // 将修复后的数据复制回原对象
+    Object.assign(state, fixedState);
+
+    console.log('智能状态修复完成:', state);
+  }
+
+  // 执行边界检查
+  performBoundaryChecks(state) {
     // 修复境界索引超出范围的问题
     if (this.REALMS && state.realmIndex >= this.REALMS.length) {
       console.warn(`修复境界索引: ${state.realmIndex} -> ${this.REALMS.length - 1}`);
@@ -1068,51 +1533,21 @@ class CultivationManager {
       state.stageIndex = this.STAGES.length - 1;
     }
 
-    // 确保所有必要属性存在
-    const defaultAttributes = {
-      attack: 10,
-      defense: 8,
-      hp: 100,
-      mana: 50,
-      spirit: 30,
-      luck: 5,
-      comprehension: 7,
-      spiritualStone: 0
-    };
-
-    if (!state.attributes) {
-      state.attributes = defaultAttributes;
-    } else {
-      // 补全缺少的属性
-      for (const [key, defaultValue] of Object.entries(defaultAttributes)) {
-        if (typeof state.attributes[key] !== 'number' || isNaN(state.attributes[key])) {
-          console.warn(`修复属性 ${key}: ${state.attributes[key]} -> ${defaultValue}`);
-          state.attributes[key] = defaultValue;
-        }
-      }
-    }
-
-    // 确保渡劫数据结构正确
-    if (!state.tribulation || typeof state.tribulation !== 'object') {
-      state.tribulation = { needed: false, successRate: 0.3, failCount: 0 };
-    } else {
-      state.tribulation.needed = Boolean(state.tribulation.needed);
-      state.tribulation.successRate = typeof state.tribulation.successRate === 'number' ?
-        Math.max(0, Math.min(1, state.tribulation.successRate)) : 0.3;
+    // 确保渡劫数据的数值范围正确
+    if (state.tribulation) {
+      state.tribulation.successRate = Math.max(0, Math.min(1, state.tribulation.successRate || 0.3));
       state.tribulation.failCount = Math.max(0, parseInt(state.tribulation.failCount) || 0);
     }
 
-    // 确保数值字段正确
-    state.realmIndex = Math.max(0, parseInt(state.realmIndex) || 0);
-    state.stageIndex = Math.max(0, parseInt(state.stageIndex) || 0);
-    state.level = Math.max(1, parseInt(state.level) || 1);
-    state.exp = Math.max(0, parseInt(state.exp) || 0);
-    state.totalCultivationTime = Math.max(0, parseInt(state.totalCultivationTime) || 0);
-
-    // 确保字符串字段
-    state.characterName = typeof state.characterName === 'string' ? state.characterName : '';
-
-    console.log('状态数据修复完成:', state);
+    // 确保属性值不为负数
+    if (state.attributes) {
+      for (const [key, value] of Object.entries(state.attributes)) {
+        if (typeof value === 'number' && value < 0) {
+          console.warn(`修复负数属性 ${key}: ${value} -> 0`);
+          state.attributes[key] = 0;
+        }
+      }
+    }
   }
 }
 
