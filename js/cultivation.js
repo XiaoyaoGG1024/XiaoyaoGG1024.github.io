@@ -2,138 +2,89 @@
 class CultivationManager {
   constructor() {
     console.log('修仙系统初始化开始...');
-    // 境界系统 - 更具修仙小说风格
-    this.REALMS = [
-      {
-        name: "炼气",
-        desc: "凡胎肉体，初窥仙途。纳天地灵气入体，洗涤凡骨，脱胎换骨始于此境。",
-        breakthrough: "灵气汇聚丹田，真元初生，踏入修仙门槛！"
-      },
-      {
-        name: "筑基",
-        desc: "筑道基，固根本。真元凝实如液，可御器飞行，寿增百载。",
-        breakthrough: "天地共鸣，道基成型，真正踏入修仙正途！"
-      },
-      {
-        name: "金丹",
-        desc: "凝聚金丹，点石成金。一粒金丹吞入腹，我命由我不由天。",
-        breakthrough: "丹田金光大盛，金丹凝成，脱离凡俗之境！"
-      },
-      {
-        name: "元婴",
-        desc: "元神化婴，神魂不灭。纵然肉身毁灭，元婴亦可夺舍重生。",
-        breakthrough: "元神蜕变，婴形初现，神识暴增百倍！"
-      },
-      {
-        name: "化神",
-        desc: "神通广大，移山填海。一念之间，千里之外取人首级。",
-        breakthrough: "神识化虚为实，领悟天地法则，神通初显！"
-      },
-      {
-        name: "炼虚",
-        desc: "炼化虚空，掌控空间。举手投足间，虚空破碎，万物湮灭。",
-        breakthrough: "虚空在握，空间之力尽在掌控！"
-      },
-      {
-        name: "合体",
-        desc: "天人合一，道法自然。与天地同寿，日月同辉。",
-        breakthrough: "天地认可，道心圆满，与天地法则融为一体！"
-      },
-      {
-        name: "大乘",
-        desc: "道法大成，无所不能。一念生死，众生如蝼蚁。",
-        breakthrough: "道法圆满，超脱生死，世间再无敌手！"
-      },
-      {
-        name: "渡劫",
-        desc: "天劫降临，九死一生。渡过此劫，便可飞升仙界。",
-        breakthrough: "九九天劫，劫雷洗礼，凤凰涅槃，仙路在望！"
-      },
-      {
-        name: "真仙",
-        desc: "飞升仙界，位列仙班。不老不死，与天地同存。",
-        breakthrough: "白日飞升，列位仙班，从此长生不死！"
-      },
-      {
-        name: "太乙",
-        desc: "太乙金仙，法则化身。掌控一方天地，众仙朝拜。",
-        breakthrough: "太乙道果成就，超脱五行，执掌天地法则！"
-      },
-      {
-        name: "大罗",
-        desc: "大罗金仙，超脱时空。过去现在未来，无所不在，无所不能。",
-        breakthrough: "大罗道果圆满，超脱一切，与道同存！"
-      }
-    ];
 
+    // 初始化数据管理器
+    this.dataManager = new CultivationDataManager();
+    this.isDataLoaded = false;
+
+    // 默认数据（作为回退）
+    this.REALMS = [];
     this.STAGES = ["前期", "中期", "后期"];
-
-    // 修炼日志模板
-    this.CULTIVATION_LOGS = [
-      "静心调息，真元缓缓流转，丹田微暖。",
-      "感悟天地灵气，心境渐趋空明。",
-      "真元运转一个大周天，修为略有精进。",
-      "参悟功法奥义，对境界理解更深一层。",
-      "引导灵气入体，洗练筋骨经脉。",
-      "冥想中偶有所悟，心境更加澄澈。",
-      "专注修炼，真元纯度再次提升。",
-      "感受天地大道，修为稳步增长。"
-    ];
-
-    // 奇遇事件库
-    this.ADVENTURES = [
-      {
-        type: "treasure",
-        name: "发现灵草",
-        desc: "闭关时偶然发现一株百年灵草，服用后气血大增。",
-        rewards: { hp: 30, mana: 10 }
-      },
-      {
-        type: "battle",
-        name: "击败妖兽",
-        desc: "出关途中遇到妖兽，经过一番激战，成功将其击败。",
-        rewards: { attack: 5, defense: 3, exp: 50 }
-      },
-      {
-        type: "enlightenment",
-        name: "顿悟天机",
-        desc: "观看日出时突然顿悟，对修炼有了新的理解。",
-        rewards: { spirit: 15, comprehension: 10 }
-      },
-      {
-        type: "resource",
-        name: "获得灵石",
-        desc: "在山洞中发现了前人留下的灵石宝藏。",
-        rewards: { spiritualStone: 100 }
-      },
-      {
-        type: "mentor",
-        name: "高人指点",
-        desc: "遇到一位隐世高人，得到了珍贵的修炼指导。",
-        rewards: { comprehension: 20, luck: 5 }
-      }
-    ];
+    this.CULTIVATION_LOGS = [];
+    this.ADVENTURES = [];
 
     this.STORAGE_KEY = 'cultivationState_v2';
     this.APPLIED_KEY = 'cultivationAppliedMinutes_v2';
     this.LOGS_KEY = 'cultivationLogs_v1';
     this.CHARACTER_NAME_KEY = 'cultivationCharacterName';
 
-    // 初始化
-    this.loadState();
+    // 异步初始化
+    this.initializeAsync();
+  }
 
-    // 确保 DOM 元素存在后再渲染
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
+  async initializeAsync() {
+    try {
+      console.log('开始加载修仙数据...');
+      await this.loadCultivationData();
+      console.log('修仙数据加载完成');
+
+      // 初始化状态
+      this.loadState();
+
+      // 确保 DOM 元素存在后再渲染
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          this.renderAllWithRetry();
+        });
+      } else {
+        // DOM 已经加载完成，立即尝试渲染
         this.renderAllWithRetry();
-      });
-    } else {
-      // DOM 已经加载完成，立即尝试渲染
-      this.renderAllWithRetry();
-    }
+      }
 
-    this.setupEventListeners();
-    console.log('修仙系统初始化完成');
+      this.setupEventListeners();
+      console.log('修仙系统初始化完成');
+    } catch (error) {
+      console.error('修仙系统初始化失败:', error);
+      // 使用默认数据继续初始化
+      await this.loadDefaultData();
+      this.loadState();
+      this.renderAllWithRetry();
+      this.setupEventListeners();
+    }
+  }
+
+  async loadCultivationData() {
+    try {
+      const data = await this.dataManager.loadAllCultivationData();
+      this.REALMS = data.realms || this.REALMS;
+      this.CULTIVATION_LOGS = data.cultivationLogs;
+      this.ADVENTURES = data.adventures;
+      this.STAGES = data.stages;
+      this.isDataLoaded = true;
+      console.log('从CSV加载数据成功:', data);
+    } catch (error) {
+      console.warn('加载CSV数据失败，使用默认数据:', error);
+      await this.loadDefaultData();
+    }
+  }
+
+  async loadDefaultData() {
+    try {
+      const defaultData = await this.dataManager.getDefaultCultivationData();
+      this.REALMS = defaultData.realms;
+      this.CULTIVATION_LOGS = defaultData.cultivationLogs;
+      this.ADVENTURES = defaultData.adventures;
+      this.STAGES = defaultData.stages;
+      this.isDataLoaded = true;
+    } catch (error) {
+      console.error('加载默认数据失败:', error);
+      // 使用最基础的硬编码数据
+      this.REALMS = [{ name: "炼气", desc: "凡胎肉体，初窥仙途。", breakthrough: "灵气汇聚丹田！" }];
+      this.CULTIVATION_LOGS = [{ content: "静心调息，真元缓缓流转。", weight: 1 }];
+      this.ADVENTURES = [{ type: "treasure", name: "发现灵草", desc: "发现珍贵灵草。", rewards: { hp: 30 } }];
+      this.STAGES = ["前期", "中期", "后期"];
+      this.isDataLoaded = true;
+    }
   }
 
   renderAll() {
@@ -253,8 +204,8 @@ class CultivationManager {
     this.logs.unshift(`[${timestamp}] ${message}`);
 
     // 只保留最新的20条日志
-    if (this.logs.length > 20) {
-      this.logs = this.logs.slice(0, 20);
+    if (this.logs.length > 100) {
+      this.logs = this.logs.slice(0, 100);
     }
 
     this.saveState();
@@ -432,14 +383,29 @@ class CultivationManager {
   }
 
   triggerAdventure() {
-    // 基于福缘属性的奇遇触发概率
-    const luckBonus = this.state.attributes.luck * 0.1;
-    const baseChance = 0.15; // 15%基础概率
-    const totalChance = 1 - Math.exp(-(baseChance + luckBonus))
+    // 使用统一的权重/条件抽取函数
+    if (!this.ADVENTURES || this.ADVENTURES.length === 0) {
+      return;
+    }
 
-    if (Math.random() < totalChance) {
-      const adventure = this.ADVENTURES[Math.floor(Math.random() * this.ADVENTURES.length)];
-      this.executeAdventure(adventure);
+    // 基于福缘属性的奇遇触发概率
+    const luckBonus = this.state.attributes.luck * 0.02; // 降低福缘影响，避免过于强力
+    const baseChance = 0.15; // 15%基础概率
+    const totalChance = Math.min(0.95, baseChance + luckBonus); // 最大95%触发概率
+
+    // 使用数据管理器的统一抽取函数
+    const selectedAdventure = this.dataManager.selectByWeightAndCondition(
+      this.ADVENTURES,
+      this.state,
+      {
+        triggerRate: totalChance,
+        allowEmpty: true,
+        debug: false
+      }
+    );
+
+    if (selectedAdventure) {
+      this.executeAdventure(selectedAdventure);
     }
   }
 
@@ -488,17 +454,39 @@ class CultivationManager {
       // 每次修炼都有机会触发奇遇
       this.triggerAdventure();
 
-      // 修炼日志
-      const logTemplate = this.CULTIVATION_LOGS[Math.floor(Math.random() * this.CULTIVATION_LOGS.length)];
+      // 修炼日志 - 使用统一的权重选择函数
+      const selectedLogTemplate = this.dataManager.selectByWeightAndCondition(
+        this.CULTIVATION_LOGS,
+        this.state,
+        {
+          triggerRate: 1.0,
+          allowEmpty: false,
+          debug: false
+        }
+      );
+      const logTemplate = selectedLogTemplate ? selectedLogTemplate.content : "静心调息，真元缓缓流转。";
       const attrGains = [];
 
-      // 随机属性提升
-      if (Math.random() < 0.3) { // 30%概率获得属性提升
-        const attrs = ['attack', 'defense', 'hp', 'mana', 'spirit'];
-        const randomAttr = attrs[Math.floor(Math.random() * attrs.length)];
-        const gain = Math.floor(Math.random() * 3) + 1;
-        this.state.attributes[randomAttr] += gain;
+      // 随机属性提升 - 使用统一的权重选择函数
+      const attributeBoosts = [
+        { content: 'attack', rewards: { attack: () => Math.floor(Math.random() * 3) + 1 }, weight: 1 },
+        { content: 'defense', rewards: { defense: () => Math.floor(Math.random() * 3) + 1 }, weight: 1 },
+        { content: 'hp', rewards: { hp: () => Math.floor(Math.random() * 15) + 5 }, weight: 1 },
+        { content: 'mana', rewards: { mana: () => Math.floor(Math.random() * 10) + 3 }, weight: 1 },
+        { content: 'spirit', rewards: { spirit: () => Math.floor(Math.random() * 3) + 1 }, weight: 1 }
+      ];
 
+      const selectedBoost = this.dataManager.selectByWeightAndCondition(
+        attributeBoosts,
+        this.state,
+        {
+          triggerRate: 0.3, // 30%概率获得属性提升
+          allowEmpty: true,
+          debug: false
+        }
+      );
+
+      if (selectedBoost) {
         const attrNames = {
           attack: '攻击',
           defense: '防御',
@@ -506,7 +494,12 @@ class CultivationManager {
           mana: '真元',
           spirit: '神识'
         };
-        attrGains.push(`${attrNames[randomAttr]}+${gain}`);
+
+        for (const [attr, gainFunc] of Object.entries(selectedBoost.rewards)) {
+          const gain = typeof gainFunc === 'function' ? gainFunc() : gainFunc;
+          this.state.attributes[attr] += gain;
+          attrGains.push(`${attrNames[attr]}+${gain}`);
+        }
       }
 
       let logMessage = `💪 修炼：${logTemplate}`;
@@ -709,19 +702,7 @@ class CultivationManager {
   // 导出存档
   exportSave() {
     try {
-      const saveData = {
-        version: '2.0',
-        timestamp: Date.now(),
-        date: new Date().toLocaleString(),
-        cultivation: {
-          state: this.state,
-          appliedMinutes: this.appliedMinutes,
-          logs: this.logs
-        },
-        characterName: this.state.characterName || '',
-        description: '修仙系统存档文件'
-      };
-
+      const saveData = this.createVersionedSaveData();
       const jsonString = JSON.stringify(saveData, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -743,35 +724,98 @@ class CultivationManager {
     }
   }
 
+  // 创建版本化存档数据
+  createVersionedSaveData() {
+    return {
+      // 主版本号：重大结构变更
+      // 次版本号：新增字段或功能
+      // 修订版本号：bug修复或小优化
+      version: '3.0.0',
+      formatVersion: 3, // 数字版本，便于比较
+      timestamp: Date.now(),
+      date: new Date().toLocaleString(),
+      gameVersion: '修仙系统 v3.0',
+
+      // 核心数据
+      cultivation: {
+        // 基础状态
+        state: {
+          ...this.state,
+          // 确保包含所有可能的字段
+          realmIndex: this.state.realmIndex || 0,
+          stageIndex: this.state.stageIndex || 0,
+          level: this.state.level || 1,
+          exp: this.state.exp || 0,
+          tribulation: this.state.tribulation || { needed: false, successRate: 0.3, failCount: 0 },
+          attributes: {
+            attack: this.state.attributes?.attack || 10,
+            defense: this.state.attributes?.defense || 8,
+            hp: this.state.attributes?.hp || 100,
+            mana: this.state.attributes?.mana || 50,
+            spirit: this.state.attributes?.spirit || 30,
+            luck: this.state.attributes?.luck || 5,
+            comprehension: this.state.attributes?.comprehension || 7,
+            spiritualStone: this.state.attributes?.spiritualStone || 0,
+            // 预留扩展字段
+            ...this.state.attributes
+          },
+          totalCultivationTime: this.state.totalCultivationTime || 0,
+          characterName: this.state.characterName || ''
+        },
+        appliedMinutes: this.appliedMinutes || 0,
+        logs: this.logs || []
+      },
+
+      // 兼容性信息
+      compatibility: {
+        minSupportedVersion: '1.0.0',
+        requiredFeatures: ['基础修仙', '属性系统', '渡劫系统'],
+        optionalFeatures: ['奇遇系统', '日志系统']
+      },
+
+      // 元数据
+      metadata: {
+        characterName: this.state.characterName || '',
+        description: '修仙系统存档文件 - 支持向后兼容',
+        exportedBy: 'CultivationManager v3.0',
+        platform: typeof window !== 'undefined' ? 'Web' : 'Node.js'
+      }
+    };
+  }
+
   // 导入存档
   importSave(file) {
     try {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const saveData = JSON.parse(e.target.result);
+          const rawData = JSON.parse(e.target.result);
 
-          // 验证数据格式
-          if (!this.validateSaveData(saveData)) {
-            alert('❗ 存档文件格式错误或损坏！');
+          // 识别并迁移存档格式
+          const migratedData = this.migrateSaveData(rawData);
+
+          if (!migratedData) {
+            alert('❗ 存档文件格式不支持或已损坏！');
             return;
           }
 
-          // 确认导入
-          const confirmMsg = `確定要导入以下存档吗？\n\n` +
-            `👤 仙号：${saveData.cultivation.state.characterName || '未设置'}\n` +
-            `⚔️ 境界：${this.REALMS[saveData.cultivation.state.realmIndex].name} ${this.STAGES[saveData.cultivation.state.stageIndex]} ${saveData.cultivation.state.level}重\n` +
-            `🔥 修炼时间：${Math.floor(saveData.cultivation.state.totalCultivationTime)}分钟\n` +
-            `📅 存档时间：${saveData.date}\n\n` +
-            `⚠️ 注意：导入将覆盖当前所有进度！`;
+          // 验证迁移后的数据
+          if (!this.validateSaveData(migratedData)) {
+            alert('❗ 存档数据验证失败，可能存在兼容性问题！');
+            return;
+          }
+
+          // 生成导入确认信息
+          const confirmMsg = this.generateImportConfirmation(migratedData, rawData);
 
           if (confirm(confirmMsg)) {
-            this.loadSaveData(saveData);
-            alert('🎉 存档导入成功！\n\n欢迎回来，' + (saveData.cultivation.state.characterName || '道友') + '！');
+            this.loadSaveData(migratedData);
+            const welcomeMsg = this.generateWelcomeMessage(migratedData, rawData);
+            alert(welcomeMsg);
           }
         } catch (parseError) {
           console.error('解析存档文件失败:', parseError);
-          alert('❗ 存档文件格式错误，无法解析！');
+          alert('❗ 存档文件格式错误，无法解析！请检查文件是否完整。');
         }
       };
       reader.readAsText(file);
@@ -779,6 +823,58 @@ class CultivationManager {
       console.error('读取存档文件失败:', error);
       alert('❗ 读取存档文件失败！');
     }
+  }
+
+  // 数据迁移 - 支持多版本向后兼容
+  migrateSaveData(rawData) {
+    try {
+      // 检测数据版本
+      const version = this.detectSaveVersion(rawData);
+      console.log('检测到存档版本:', version);
+
+      // 根据版本进行迁移
+      switch (version.major) {
+        case 1:
+          return this.migrateFromV1(rawData);
+        case 2:
+          return this.migrateFromV2(rawData);
+        case 3:
+          return this.migrateFromV3(rawData);
+        default:
+          console.warn('未知的存档版本:', version);
+          return this.tryGenericMigration(rawData);
+      }
+    } catch (error) {
+      console.error('数据迁移失败:', error);
+      return null;
+    }
+  }
+
+  // 检测存档版本
+  detectSaveVersion(data) {
+    // 新版本格式（v3.0+）
+    if (data.formatVersion && typeof data.formatVersion === 'number') {
+      return { major: data.formatVersion, minor: 0, patch: 0, format: 'new' };
+    }
+
+    // 字符串版本格式（v2.0）
+    if (data.version && typeof data.version === 'string') {
+      if (data.version === '2.0') {
+        return { major: 2, minor: 0, patch: 0, format: 'v2' };
+      }
+    }
+
+    // 旧版本格式（v1.x 或更早）
+    if (data.cultivation && data.cultivation.state) {
+      return { major: 1, minor: 0, patch: 0, format: 'legacy' };
+    }
+
+    // 极旧格式（直接包含状态数据）
+    if (data.realmIndex !== undefined || data.state) {
+      return { major: 0, minor: 1, patch: 0, format: 'ancient' };
+    }
+
+    return { major: 0, minor: 0, patch: 0, format: 'unknown' };
   }
 
   // 验证存档数据
@@ -810,44 +906,114 @@ class CultivationManager {
     }
   }
 
-  // 加载存档数据
+  // 加载存档数据（增强版）
   loadSaveData(saveData) {
     try {
+      console.log('开始加载存档数据:', saveData);
+
       // 备份当前数据
       const backup = {
-        state: { ...this.state },
+        state: JSON.parse(JSON.stringify(this.state)),
         appliedMinutes: this.appliedMinutes,
         logs: [...this.logs]
       };
 
-      // 加载新数据
-      this.state = { ...saveData.cultivation.state };
-      this.appliedMinutes = saveData.cultivation.appliedMinutes || 0;
-      this.logs = saveData.cultivation.logs || [];
+      try {
+        // 加载新数据
+        const newState = { ...saveData.cultivation.state };
 
-      // 确保所有属性存在
-      this.state.attributes = this.state.attributes || {
-        attack: 10,
-        defense: 8,
-        hp: 100,
-        mana: 50,
-        spirit: 30,
-        luck: 5,
-        comprehension: 7,
-        spiritualStone: 0
-      };
+        // 数据修复和补全
+        this.fixAndValidateState(newState);
 
-      // 保存到本地存储
-      this.saveState();
+        this.state = newState;
+        this.appliedMinutes = Math.max(0, saveData.cultivation.appliedMinutes || 0);
+        this.logs = Array.isArray(saveData.cultivation.logs) ? saveData.cultivation.logs : [];
 
-      // 刷新界面
-      this.renderAll();
+        // 保存到本地存储
+        this.saveState();
 
-      console.log('存档导入成功:', saveData);
+        // 刷新界面
+        this.renderAll();
+        this.renderLogs();
+
+        console.log('存档导入成功:', saveData);
+      } catch (loadError) {
+        console.error('加载新数据失败，还原备份:', loadError);
+
+        // 还原备份数据
+        this.state = backup.state;
+        this.appliedMinutes = backup.appliedMinutes;
+        this.logs = backup.logs;
+        this.saveState();
+        this.renderAll();
+
+        throw loadError;
+      }
     } catch (error) {
       console.error('加载存档数据失败:', error);
-      alert('❗ 导入存档失败，请检查文件格式！');
+      alert('❗ 导入存档失败，已还原原有数据。请检查文件格式！');
     }
+  }
+
+  // 修复和验证状态数据
+  fixAndValidateState(state) {
+    // 修复境界索引超出范围的问题
+    if (this.REALMS && state.realmIndex >= this.REALMS.length) {
+      console.warn(`修复境界索引: ${state.realmIndex} -> ${this.REALMS.length - 1}`);
+      state.realmIndex = this.REALMS.length - 1;
+    }
+
+    // 修复阶段索引
+    if (this.STAGES && state.stageIndex >= this.STAGES.length) {
+      console.warn(`修复阶段索引: ${state.stageIndex} -> ${this.STAGES.length - 1}`);
+      state.stageIndex = this.STAGES.length - 1;
+    }
+
+    // 确保所有必要属性存在
+    const defaultAttributes = {
+      attack: 10,
+      defense: 8,
+      hp: 100,
+      mana: 50,
+      spirit: 30,
+      luck: 5,
+      comprehension: 7,
+      spiritualStone: 0
+    };
+
+    if (!state.attributes) {
+      state.attributes = defaultAttributes;
+    } else {
+      // 补全缺少的属性
+      for (const [key, defaultValue] of Object.entries(defaultAttributes)) {
+        if (typeof state.attributes[key] !== 'number' || isNaN(state.attributes[key])) {
+          console.warn(`修复属性 ${key}: ${state.attributes[key]} -> ${defaultValue}`);
+          state.attributes[key] = defaultValue;
+        }
+      }
+    }
+
+    // 确保渡劫数据结构正确
+    if (!state.tribulation || typeof state.tribulation !== 'object') {
+      state.tribulation = { needed: false, successRate: 0.3, failCount: 0 };
+    } else {
+      state.tribulation.needed = Boolean(state.tribulation.needed);
+      state.tribulation.successRate = typeof state.tribulation.successRate === 'number' ?
+        Math.max(0, Math.min(1, state.tribulation.successRate)) : 0.3;
+      state.tribulation.failCount = Math.max(0, parseInt(state.tribulation.failCount) || 0);
+    }
+
+    // 确保数值字段正确
+    state.realmIndex = Math.max(0, parseInt(state.realmIndex) || 0);
+    state.stageIndex = Math.max(0, parseInt(state.stageIndex) || 0);
+    state.level = Math.max(1, parseInt(state.level) || 1);
+    state.exp = Math.max(0, parseInt(state.exp) || 0);
+    state.totalCultivationTime = Math.max(0, parseInt(state.totalCultivationTime) || 0);
+
+    // 确保字符串字段
+    state.characterName = typeof state.characterName === 'string' ? state.characterName : '';
+
+    console.log('状态数据修复完成:', state);
   }
 }
 
