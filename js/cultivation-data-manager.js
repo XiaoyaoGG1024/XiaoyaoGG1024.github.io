@@ -1,9 +1,18 @@
 // 修仙系统数据管理器
-class CultivationDataManager {
+// 保护全局声明
+window.CultivationDataManager = window.CultivationDataManager || class CultivationDataManager {
   constructor() {
     this.cache = new Map();
     this.baseUrl = '/js/data/';
   }
+//   // ...保留原来的方法
+// };
+
+// class CultivationDataManager {
+//   constructor() {
+//     this.cache = new Map();
+//     this.baseUrl = '/js/data/';
+//   }
 
   // CSV解析器
   parseCSV(csvText) {

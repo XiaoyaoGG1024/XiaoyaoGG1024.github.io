@@ -955,6 +955,105 @@ class CultivationManager {
     }
   }
 
+  // V3格式迁移（当前最新格式，直接使用）
+  migrateFromV3(rawData) {
+    console.log('V3格式数据，直接使用');
+    return rawData;
+  }
+
+  // V2格式迁移
+  migrateFromV2(rawData) {
+    console.log('从V2格式迁移数据');
+    try {
+      const migratedData = {
+        version: "3.0.0",
+        formatVersion: 3,
+        timestamp: Date.now(),
+        date: new Date().toLocaleString('zh-CN'),
+        gameVersion: "修仙系统 v3.0",
+        cultivation: rawData.cultivation || rawData,
+        compatibility: {
+          minSupportedVersion: "1.0.0",
+          requiredFeatures: ["基础修仙", "属性系统", "渡劫系统"],
+          optionalFeatures: ["奇遇系统", "日志系统"]
+        },
+        metadata: {
+          characterName: rawData.cultivation?.state?.characterName || "道友",
+          description: "修仙系统存档文件 - 从V2迁移",
+          exportedBy: "CultivationManager v3.0",
+          platform: "Web"
+        }
+      };
+      return migratedData;
+    } catch (error) {
+      console.error('V2迁移失败:', error);
+      return null;
+    }
+  }
+
+  // V1格式迁移
+  migrateFromV1(rawData) {
+    console.log('从V1格式迁移数据');
+    try {
+      const migratedData = {
+        version: "3.0.0",
+        formatVersion: 3,
+        timestamp: Date.now(),
+        date: new Date().toLocaleString('zh-CN'),
+        gameVersion: "修仙系统 v3.0",
+        cultivation: {
+          state: rawData.cultivation?.state || rawData,
+          appliedMinutes: rawData.cultivation?.appliedMinutes || 0,
+          logs: rawData.cultivation?.logs || []
+        },
+        compatibility: {
+          minSupportedVersion: "1.0.0",
+          requiredFeatures: ["基础修仙", "属性系统"],
+          optionalFeatures: ["渡劫系统", "奇遇系统", "日志系统"]
+        },
+        metadata: {
+          characterName: rawData.cultivation?.state?.characterName || "道友",
+          description: "修仙系统存档文件 - 从V1迁移",
+          exportedBy: "CultivationManager v3.0",
+          platform: "Web"
+        }
+      };
+      return migratedData;
+    } catch (error) {
+      console.error('V1迁移失败:', error);
+      return null;
+    }
+  }
+
+  // 通用迁移（兜底方案）
+  tryGenericMigration(rawData) {
+    console.log('尝试通用迁移');
+    try {
+      // 如果数据有cultivation字段，尝试包装
+      if (rawData.cultivation) {
+        return this.migrateFromV2(rawData);
+      }
+
+      // 如果直接是状态数据，包装为V1格式再迁移
+      if (rawData.realmIndex !== undefined || rawData.attributes) {
+        const wrappedData = {
+          cultivation: {
+            state: rawData,
+            appliedMinutes: 0,
+            logs: []
+          }
+        };
+        return this.migrateFromV1(wrappedData);
+      }
+
+      console.warn('无法识别的数据格式');
+      return null;
+    } catch (error) {
+      console.error('通用迁移失败:', error);
+      return null;
+    }
+  }
+
   // 修复和验证状态数据
   fixAndValidateState(state) {
     // 修复境界索引超出范围的问题
