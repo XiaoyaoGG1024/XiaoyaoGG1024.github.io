@@ -160,55 +160,163 @@ class FishTimeManager {
 // ---------------- 修仙系统管理器 ----------------
 class CultivationManager {
   constructor() {
+    // 境界系统 - 更具修仙小说风格
     this.REALMS = [
-      { name: "炼气", desc: "凡人初踏仙途，以气养身，以息养神。" },
-      { name: "筑基", desc: "根基稳固，灵力渐成，踏上修仙正途。" },
-      { name: "金丹", desc: "灵丹凝聚，寿元延长，天地初识其名。" },
-      { name: "元婴", desc: "元神化婴，神识外放，法力大增。" },
-      { name: "化神", desc: "神念无疆，形神合一，可破山河。" },
-      { name: "炼虚", desc: "虚实相生，身可化影，神游万界。" },
-      { name: "合体", desc: "天地与我同生，万物与我为一。" },
-      { name: "大乘", desc: "道法圆满，一念动九天，世间难寻敌手。" },
-      { name: "渡劫", desc: "雷火天威，九死一生，成仙之前最后试炼。" },
-      { name: "真仙", desc: "飞升仙界，位列仙班，长生不灭。" },
-      { name: "太乙", desc: "混元大道，肉身永固，神通无量。" },
-      { name: "大罗", desc: "超脱万界，唯我独尊，永恒不灭。" }
+      {
+        name: "炼气",
+        desc: "凡胎肉体，初窥仙途。纳天地灵气入体，洗涤凡骨，脱胎换骨始于此境。",
+        breakthrough: "灵气汇聚丹田，真元初生，踏入修仙门槛！"
+      },
+      {
+        name: "筑基",
+        desc: "筑道基，固根本。真元凝实如液，可御器飞行，寿增百载。",
+        breakthrough: "天地共鸣，道基成型，真正踏入修仙正途！"
+      },
+      {
+        name: "金丹",
+        desc: "凝聚金丹，点石成金。一粒金丹吞入腹，我命由我不由天。",
+        breakthrough: "丹田金光大盛，金丹凝成，脱离凡俗之境！"
+      },
+      {
+        name: "元婴",
+        desc: "元神化婴，神魂不灭。纵然肉身毁灭，元婴亦可夺舍重生。",
+        breakthrough: "元神蜕变，婴形初现，神识暴增百倍！"
+      },
+      {
+        name: "化神",
+        desc: "神通广大，移山填海。一念之间，千里之外取人首级。",
+        breakthrough: "神识化虚为实，领悟天地法则，神通初显！"
+      },
+      {
+        name: "炼虚",
+        desc: "炼化虚空，掌控空间。举手投足间，虚空破碎，万物湮灭。",
+        breakthrough: "虚空在握，空间之力尽在掌控！"
+      },
+      {
+        name: "合体",
+        desc: "天人合一，道法自然。与天地同寿，日月同辉。",
+        breakthrough: "天地认可，道心圆满，与天地法则融为一体！"
+      },
+      {
+        name: "大乘",
+        desc: "道法大成，无所不能。一念生死，众生如蝼蚁。",
+        breakthrough: "道法圆满，超脱生死，世间再无敌手！"
+      },
+      {
+        name: "渡劫",
+        desc: "天劫降临，九死一生。渡过此劫，便可飞升仙界。",
+        breakthrough: "九九天劫，劫雷洗礼，凤凰涅槃，仙路在望！"
+      },
+      {
+        name: "真仙",
+        desc: "飞升仙界，位列仙班。不老不死，与天地同存。",
+        breakthrough: "白日飞升，列位仙班，从此长生不死！"
+      },
+      {
+        name: "太乙",
+        desc: "太乙金仙，法则化身。掌控一方天地，众仙朝拜。",
+        breakthrough: "太乙道果成就，超脱五行，执掌天地法则！"
+      },
+      {
+        name: "大罗",
+        desc: "大罗金仙，超脱时空。过去现在未来，无所不在，无所不能。",
+        breakthrough: "大罗道果圆满，超脱一切，与道同存！"
+      }
     ];
+
     this.STAGES = ["前期", "中期", "后期"];
 
-    this.STORAGE_KEY = 'cultivationState_v1';
-    this.APPLIED_KEY = 'cultivationAppliedMinutes_v1';
+    // 修炼日志模板
+    this.CULTIVATION_LOGS = [
+      "静心调息，真元缓缓流转，丹田微暖。",
+      "感悟天地灵气，心境渐趋空明。",
+      "真元运转一个大周天，修为略有精进。",
+      "参悟功法奥义，对境界理解更深一层。",
+      "引导灵气入体，洗练筋骨经脉。",
+      "冥想中偶有所悟，心境更加澄澈。",
+      "专注修炼，真元纯度再次提升。",
+      "感受天地大道，修为稳步增长。"
+    ];
 
-    // load
+    // 奇遇事件库
+    this.ADVENTURES = [
+      {
+        type: "treasure",
+        name: "发现灵草",
+        desc: "闭关时偶然发现一株百年灵草，服用后气血大增。",
+        rewards: { hp: 30, mana: 10 }
+      },
+      {
+        type: "battle",
+        name: "击败妖兽",
+        desc: "出关途中遇到妖兽，经过一番激战，成功将其击败。",
+        rewards: { attack: 5, defense: 3, exp: 50 }
+      },
+      {
+        type: "enlightenment",
+        name: "顿悟天机",
+        desc: "观看日出时突然顿悟，对修炼有了新的理解。",
+        rewards: { spirit: 15, comprehension: 10 }
+      },
+      {
+        type: "resource",
+        name: "获得灵石",
+        desc: "在山洞中发现了前人留下的灵石宝藏。",
+        rewards: { spiritualStone: 100 }
+      },
+      {
+        type: "mentor",
+        name: "高人指点",
+        desc: "遇到一位隐世高人，得到了珍贵的修炼指导。",
+        rewards: { comprehension: 20, luck: 5 }
+      }
+    ];
+
+    this.STORAGE_KEY = 'cultivationState_v2';
+    this.APPLIED_KEY = 'cultivationAppliedMinutes_v2';
+    this.LOGS_KEY = 'cultivationLogs_v1';
+
+    // 初始化
     this.loadState();
-
-    // initial render
     this.renderCultivation();
-
-    // bind button (if DOM ready)
-    const btn = document.getElementById('btn-tribulation');
-    if (btn) btn.addEventListener('click', () => this.tryTribulation());
+    this.setupEventListeners();
   }
 
   loadState() {
-    const raw = localStorage.getItem(this.STORAGE_KEY);
-    if (raw) {
-      try {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      if (raw) {
         this.state = JSON.parse(raw);
-        // defensive defaults
+        // 确保所有属性存在
         this.state.realmIndex = this.state.realmIndex || 0;
         this.state.stageIndex = this.state.stageIndex || 0;
         this.state.level = this.state.level || 1;
         this.state.exp = this.state.exp || 0;
         this.state.tribulation = this.state.tribulation || {needed:false, successRate:0.3, failCount:0};
-      } catch (e) {
-        console.warn('读取修仙状态失败，重置为初始状态。', e);
+
+        // 新增属性系统
+        this.state.attributes = this.state.attributes || {
+          attack: 10,
+          defense: 8,
+          hp: 100,
+          mana: 50,
+          spirit: 30,
+          luck: 5,
+          comprehension: 7,
+          spiritualStone: 0
+        };
+
+        this.state.totalCultivationTime = this.state.totalCultivationTime || 0;
+      } else {
         this.resetState();
       }
-    } else {
+
+      this.appliedMinutes = parseInt(localStorage.getItem(this.APPLIED_KEY)) || 0;
+      this.loadLogs();
+    } catch (e) {
+      console.warn('读取修仙状态失败，重置为初始状态。', e);
       this.resetState();
     }
-    this.appliedMinutes = parseInt(localStorage.getItem(this.APPLIED_KEY)) || 0;
   }
 
   resetState() {
@@ -217,31 +325,181 @@ class CultivationManager {
       stageIndex: 0,
       level: 1,
       exp: 0,
-      tribulation: { needed: false, successRate: 0.3, failCount: 0 }
+      tribulation: { needed: false, successRate: 0.3, failCount: 0 },
+      attributes: {
+        attack: 10,
+        defense: 8,
+        hp: 100,
+        mana: 50,
+        spirit: 30,
+        luck: 5,
+        comprehension: 7,
+        spiritualStone: 0
+      },
+      totalCultivationTime: 0
     };
     this.appliedMinutes = 0;
+    this.logs = [];
     this.saveState();
   }
 
   saveState() {
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.state));
     localStorage.setItem(this.APPLIED_KEY, String(this.appliedMinutes || 0));
+    localStorage.setItem(this.LOGS_KEY, JSON.stringify(this.logs));
+  }
+
+  loadLogs() {
+    try {
+      const savedLogs = localStorage.getItem(this.LOGS_KEY);
+      this.logs = savedLogs ? JSON.parse(savedLogs) : [];
+    } catch (e) {
+      this.logs = [];
+    }
+  }
+
+  addLog(message) {
+    const timestamp = new Date().toLocaleTimeString();
+    this.logs.unshift(`[${timestamp}] ${message}`);
+
+    // 只保留最新的20条日志
+    if (this.logs.length > 20) {
+      this.logs = this.logs.slice(0, 20);
+    }
+
+    this.saveState();
+    this.renderLogs();
+  }
+
+  renderLogs() {
+    const logsElement = document.getElementById('cultivation-logs');
+    if (logsElement) {
+      logsElement.innerHTML = this.logs.slice(0, 10).map(log =>
+        `<div class="log-entry">${log}</div>`
+      ).join('');
+    }
+  }
+
+  renderAttributes() {
+    const attrElement = document.getElementById('player-attributes');
+    if (attrElement) {
+      attrElement.innerHTML = `
+        <div class="attr-row">
+          <span class="attr-item">⚔️ 攻击: <strong>${this.state.attributes.attack}</strong></span>
+          <span class="attr-item">🛡️ 防御: <strong>${this.state.attributes.defense}</strong></span>
+        </div>
+        <div class="attr-row">
+          <span class="attr-item">❤️ 气血: <strong>${this.state.attributes.hp}</strong></span>
+          <span class="attr-item">🔮 真元: <strong>${this.state.attributes.mana}</strong></span>
+        </div>
+        <div class="attr-row">
+          <span class="attr-item">🧠 神识: <strong>${this.state.attributes.spirit}</strong></span>
+          <span class="attr-item">🍀 福缘: <strong>${this.state.attributes.luck}</strong></span>
+        </div>
+        <div class="attr-row">
+          <span class="attr-item">💎 悟性: <strong>${this.state.attributes.comprehension}</strong></span>
+          <span class="attr-item">💰 灵石: <strong>${this.state.attributes.spiritualStone}</strong></span>
+        </div>
+      `;
+    }
   }
 
   getNeedExp() {
-    // 每重所需分钟数（可按需调整）
-    // 当前策略：基数 5 分钟，随境界、阶段提升而线性加成
-    return 5 * (this.state.realmIndex + 1) * (this.state.stageIndex + 1);
+    // 经验需求随境界和悟性调整
+    const baseExp = 5 * (this.state.realmIndex + 1) * (this.state.stageIndex + 1);
+    const comprehensionBonus = Math.max(0.5, 1 - this.state.attributes.comprehension * 0.02);
+    return Math.floor(baseExp * comprehensionBonus);
+  }
+
+  triggerAdventure() {
+    // 基于福缘属性的奇遇触发概率
+    const luckBonus = this.state.attributes.luck * 0.1;
+    const baseChance = 0.15; // 15%基础概率
+    const totalChance = Math.min(0.5, baseChance + luckBonus);
+
+    if (Math.random() < totalChance) {
+      const adventure = this.ADVENTURES[Math.floor(Math.random() * this.ADVENTURES.length)];
+      this.executeAdventure(adventure);
+    }
+  }
+
+  executeAdventure(adventure) {
+    let logMessage = `🎲 奇遇：${adventure.desc}`;
+    let rewards = [];
+
+    // 应用奖励
+    for (const [attr, value] of Object.entries(adventure.rewards)) {
+      if (attr === 'exp') {
+        this.state.exp += value;
+        rewards.push(`经验+${value}`);
+      } else if (this.state.attributes.hasOwnProperty(attr)) {
+        this.state.attributes[attr] += value;
+        const attrNames = {
+          attack: '攻击',
+          defense: '防御',
+          hp: '气血',
+          mana: '真元',
+          spirit: '神识',
+          luck: '福缘',
+          comprehension: '悟性',
+          spiritualStone: '灵石'
+        };
+        rewards.push(`${attrNames[attr]}+${value}`);
+      }
+    }
+
+    if (rewards.length > 0) {
+      logMessage += ` (${rewards.join('，')})`;
+    }
+
+    this.addLog(logMessage);
+    this.saveState();
+    this.renderCultivation();
+    this.renderAttributes();
   }
 
   updateCultivation(minutes) {
     if (!minutes || minutes <= 0) return;
 
     try {
-      // 如果已到达最高境界（大罗），不再增加
+      // 如果已到达最高境界，仍然可以增加属性
+      this.state.totalCultivationTime += minutes;
+
+      // 每次修炼都有机会触发奇遇
+      this.triggerAdventure();
+
+      // 修炼日志
+      const logTemplate = this.CULTIVATION_LOGS[Math.floor(Math.random() * this.CULTIVATION_LOGS.length)];
+      const attrGains = [];
+
+      // 随机属性提升
+      if (Math.random() < 0.3) { // 30%概率获得属性提升
+        const attrs = ['attack', 'defense', 'hp', 'mana', 'spirit'];
+        const randomAttr = attrs[Math.floor(Math.random() * attrs.length)];
+        const gain = Math.floor(Math.random() * 3) + 1;
+        this.state.attributes[randomAttr] += gain;
+
+        const attrNames = {
+          attack: '攻击',
+          defense: '防御',
+          hp: '气血',
+          mana: '真元',
+          spirit: '神识'
+        };
+        attrGains.push(`${attrNames[randomAttr]}+${gain}`);
+      }
+
+      let logMessage = `💪 修炼：${logTemplate}`;
+      if (attrGains.length > 0) {
+        logMessage += ` (${attrGains.join('，')})`;
+      }
+      this.addLog(logMessage);
+
+      // 如果已到达最高境界，不再升级
       if (this.state.realmIndex >= this.REALMS.length - 1) {
         this.saveState();
         this.renderCultivation();
+        this.renderAttributes();
         return;
       }
 
@@ -255,15 +513,26 @@ class CultivationManager {
 
         if (this.state.level < 10) {
           this.state.level++;
+          this.addLog(`⬆️ 等级提升：修为更进一步，当前${this.state.level}重。`);
         } else {
-          // 十重完成
+          // 十重完成，进入下一阶段
           this.state.level = 1;
           if (this.state.stageIndex < 2) {
             this.state.stageIndex++;
+            const stage = this.STAGES[this.state.stageIndex];
+            const realm = this.REALMS[this.state.realmIndex];
+            this.addLog(`🌟 阶段突破：进入${realm.name}${stage}，实力大增！`);
+
+            // 阶段突破奖励
+            this.state.attributes.attack += 10;
+            this.state.attributes.defense += 8;
+            this.state.attributes.hp += 50;
+            this.state.attributes.mana += 30;
           } else {
-            // 阶段 完整 -> 触发渡劫
+            // 阶段完整，触发渡劫
             this.state.stageIndex = 0;
             this.state.tribulation.needed = true;
+            this.addLog(`⚡ 境界圆满：感受到天劫将至，准备渡劫突破！`);
             break;
           }
         }
@@ -272,6 +541,7 @@ class CultivationManager {
 
       this.saveState();
       this.renderCultivation();
+      this.renderAttributes();
     } catch (error) {
       console.error('更新修仙进度时出错:', error);
     }
@@ -285,7 +555,7 @@ class CultivationManager {
       const rand = Math.random();
 
       if (rand < t.successRate) {
-        // 成功：进入下一个大境界（若已到最后则停留）
+        // 渡劫成功
         const oldRealmIndex = this.state.realmIndex;
         this.state.realmIndex = Math.min(this.state.realmIndex + 1, this.REALMS.length - 1);
         this.state.stageIndex = 0;
@@ -294,32 +564,47 @@ class CultivationManager {
         this.state.tribulation = { needed: false, successRate: 0.3, failCount: 0 };
 
         const newRealm = this.REALMS[this.state.realmIndex];
-        const message = oldRealmIndex === this.state.realmIndex
-          ? `⚡ 渡劫成功！已达最高境界【${newRealm.name}】！`
-          : `⚡ 渡劫成功！突破到【${newRealm.name} 前期一重】`;
+        let message;
 
-        alert(message);
+        if (oldRealmIndex === this.state.realmIndex) {
+          message = `⚡ 渡劫成功！已达最高境界【${newRealm.name}】！`;
+        } else {
+          message = newRealm.breakthrough;
+
+          // 境界突破巨大奖励
+          this.state.attributes.attack += 30;
+          this.state.attributes.defense += 25;
+          this.state.attributes.hp += 200;
+          this.state.attributes.mana += 150;
+          this.state.attributes.spirit += 50;
+          this.state.attributes.luck += 2;
+          this.state.attributes.spiritualStone += 500;
+        }
+
+        this.addLog(`🎉 ${message}`);
+        alert(`⚡ 渡劫成功！\n\n${message}`);
       } else {
-        // 失败：累加成功率
+        // 渡劫失败
         t.failCount = (t.failCount || 0) + 1;
         t.successRate = Math.min(0.95, (t.successRate || 0.3) + 0.1);
-        alert(`💀 渡劫失败！下一次成功率 ${(t.successRate * 100).toFixed(0)}%`);
+        const failMessage = `天劫威能恐怖，这次未能成功，但对天劫的理解更深了。`;
+        this.addLog(`💀 渡劫失败：${failMessage}`);
+        alert(`💀 渡劫失败！\n\n${failMessage}\n下一次成功率 ${(t.successRate * 100).toFixed(0)}%`);
       }
 
       this.saveState();
       this.renderCultivation();
+      this.renderAttributes();
     } catch (error) {
       console.error('渡劫时出错:', error);
       alert('渡劫过程中出现错误，请稍后重试！');
     }
   }
 
-  // totalSeconds: 来自摸鱼计时器的总秒数
   syncWithTotalSeconds(totalSeconds) {
     if (typeof totalSeconds !== 'number') return;
     const totalMinutes = Math.floor(totalSeconds / 60);
 
-    // 如果探测到 totalMinutes 减少（可能是用户手动重置），将 appliedMinutes 与之对齐（不回退修为）
     if (totalMinutes < this.appliedMinutes) {
       this.appliedMinutes = totalMinutes;
       localStorage.setItem(this.APPLIED_KEY, String(this.appliedMinutes));
@@ -334,17 +619,13 @@ class CultivationManager {
     }
   }
 
-  // 当用户点击"重置时间"时调用：同时重置摸鱼时间追踪和修仙等级
   handleFishReset() {
-    // 重置摸鱼时间追踪
     this.appliedMinutes = 0;
     localStorage.setItem(this.APPLIED_KEY, '0');
-
-    // 重置修仙等级到初始状态
     this.resetState();
-
-    // 重新渲染修仙界面
     this.renderCultivation();
+    this.renderAttributes();
+    this.renderLogs();
   }
 
   renderCultivation() {
@@ -357,19 +638,24 @@ class CultivationManager {
     const realm = this.REALMS[this.state.realmIndex];
 
     if (this.state.tribulation.needed) {
-      statusEl.innerText = `【${realm.name} 圆满】需要渡劫`;
-      descEl.innerText = realm.desc;
+      statusEl.innerText = `【${realm.name} 圆满】准备渡劫`;
+      descEl.innerText = `即将面临天劫考验，成功则可突破至更高境界。当前成功率：${(this.state.tribulation.successRate * 100).toFixed(0)}%`;
       progressEl.style.width = "100%";
       if (btnTrib) btnTrib.style.display = "inline-block";
     } else {
       const stage = this.STAGES[this.state.stageIndex];
       const needExp = this.getNeedExp();
       const percent = needExp > 0 ? Math.min(100, Math.round((this.state.exp / needExp) * 100)) : 0;
-      statusEl.innerText = `境界：${realm.name}${stage}${this.state.level}重`;
+      statusEl.innerText = `境界：${realm.name} ${stage} ${this.state.level}重`;
       descEl.innerText = realm.desc;
       progressEl.style.width = percent + "%";
       if (btnTrib) btnTrib.style.display = "none";
     }
+  }
+
+  setupEventListeners() {
+    const btn = document.getElementById('btn-tribulation');
+    if (btn) btn.addEventListener('click', () => this.tryTribulation());
   }
 }
 // ---------------- 修仙系统管理器 结束 ----------------
