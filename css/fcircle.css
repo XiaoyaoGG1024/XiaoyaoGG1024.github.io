@@ -206,6 +206,35 @@
   display: flex;
   justify-content: center;
 }
+.offline-info {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #ffd700;
+}
+
+.attribute-tip {
+  position: fixed;
+  left: 50%;
+  bottom: 100px;
+  transform: translateX(-50%);
+  background: rgba(255, 223, 0, 0.9);
+  color: #222;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 1;
+  pointer-events: none;
+  z-index: 9999;
+  animation: floatUp 1s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  50% { transform: translateX(-50%) translateY(-20px); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-40px); opacity: 0; }
+}
 
 .attributes-card {
   background: linear-gradient(135deg, #4fc3e0 0%, #40abd8 100%);

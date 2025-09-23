@@ -291,50 +291,54 @@ window.CultivationDataManager = window.CultivationDataManager || class Cultivati
   }
 
   // 统一的权重/条件抽取函数
-  selectByWeightAndCondition(items, userState = {}, options = {}) {
-    if (!Array.isArray(items) || items.length === 0) {
-      return null;
+ selectByWeightAndCondition(items, userState = {}, options = {}) {
+  if (!Array.isArray(items) || items.length === 0) {
+    if (options.debug) {
+      console.warn('[selectByWeightAndCondition] 输入数组为空或非法:', items);
     }
-
-    // 默认选项
-    const defaultOptions = {
-      triggerRate: 1.0, // 触发概率 (0-1)
-      allowEmpty: true,  // 允许返回空结果
-      debug: false       // 调试模式
-    };
-
-    const opts = { ...defaultOptions, ...options };
-
-    // 检查触发概率
-    if (Math.random() > opts.triggerRate) {
-      return opts.allowEmpty ? null : items[0];
-    }
-
-    // 第一步：条件过滤
-    const validItems = items.filter(item => {
-      return this.checkConditions(item, userState);
-    });
-
-    if (validItems.length === 0) {
-      if (opts.debug) {
-        console.log('没有满足条件的项目:', items);
-      }
-      return opts.allowEmpty ? null : items[0];
-    }
-
-    // 第二步：权重计算和选择
-    const selected = this.weightedRandomSelect(validItems, userState, opts);
-
-    if (opts.debug) {
-      console.log('权重选择结果:', {
-        totalItems: items.length,
-        validItems: validItems.length,
-        selected: selected
-      });
-    }
-
-    return selected;
+    return null;
   }
+
+  // 默认选项
+  const defaultOptions = {
+    triggerRate: 1.0, // 触发概率 (0-1)
+    allowEmpty: true,  // 允许返回空结果
+    debug: false       // 调试模式
+  };
+  const opts = { ...defaultOptions, ...options };
+
+  // 第一步：条件过滤
+  const validItems = items.filter(item => this.checkConditions(item, userState));
+
+  if (validItems.length === 0) {
+    if (opts.debug) {
+      console.log('[selectByWeightAndCondition] 没有满足条件的项目:', items);
+    }
+    return opts.allowEmpty ? null : items[0]; // fallback 返回原数组第一个
+  }
+
+  // 第二步：触发概率判断
+  if (Math.random() > opts.triggerRate) {
+    if (opts.debug) {
+      console.log('[selectByWeightAndCondition] 未触发，返回 fallback');
+    }
+    return opts.allowEmpty ? null : validItems[0];
+  }
+
+  // 第三步：权重选择
+  const selected = this.weightedRandomSelect(validItems, userState, opts);
+
+  if (opts.debug) {
+    console.log('[selectByWeightAndCondition] 权重选择结果:', {
+      totalItems: items.length,
+      validItems: validItems.length,
+      selected
+    });
+  }
+
+  return selected;
+}
+
 
   // 条件检查函数
   checkConditions(item, userState) {
@@ -354,189 +358,182 @@ window.CultivationDataManager = window.CultivationDataManager || class Cultivati
   }
 
   // 解析条件字符串
-  parseConditions(conditionStr) {
-    if (!conditionStr || typeof conditionStr !== 'string') {
-      return [];
-    }
-
-    const conditions = [];
-    const parts = conditionStr.split(',').map(s => s.trim());
-
-    for (const part of parts) {
-      const condition = this.parseConditionPart(part);
-      if (condition) {
-        conditions.push(condition);
-      }
-    }
-
-    return conditions;
+ parseConditions(conditionStr) {
+  if (!conditionStr || typeof conditionStr !== 'string') {
+    return [];
   }
+
+  const parts = conditionStr.split(',').map(s => s.trim());
+  const conditions = [];
+
+  for (const part of parts) {
+    const condition = this.parseConditionPart(part);
+    if (condition) {
+      conditions.push(condition);
+    } else if (this.debug) {
+      console.warn('[parseConditions] 条件解析失败:', part);
+    }
+  }
+
+  return conditions;
+}
+
 
   // 解析单个条件部分
   parseConditionPart(part) {
-    // 支持格式：
-    // "level>=5" - 等级要求
-    // "realm>=1" - 境界要求
-    // "attack>=20" - 属性要求
-    // "stage>=1" - 阶段要求
-
-    const operators = ['>=', '<=', '>', '<', '==', '!='];
-    let operator = null;
-    let field = null;
-    let value = null;
-
-    for (const op of operators) {
-      if (part.includes(op)) {
-        const [fieldPart, valuePart] = part.split(op);
-        field = fieldPart.trim();
-        value = parseFloat(valuePart.trim());
-        operator = op;
-        break;
-      }
+    // 支持格式： // "level>=5" - 等级要求 // "realm>=1" - 境界要求 // "attack>=20" - 属性要求 // "stage>=1" - 阶段要求
+  const operators = ['>=', '<=', '>', '<', '==', '!='];
+  for (const op of operators) {
+    const index = part.indexOf(op);
+    if (index !== -1) {
+      const field = part.substring(0, index).trim();
+      const valueStr = part.substring(index + op.length).trim();
+      let value = parseFloat(valueStr);
+      if (isNaN(value)) value = valueStr; // 支持字符串值
+      return { field, operator: op, value };
     }
-
-    if (field && operator !== null && !isNaN(value)) {
-      return { field, operator, value };
-    }
-
-    return null;
   }
+
+  if (this.debug) {
+    console.warn('[parseConditionPart] 条件解析失败:', part);
+  }
+  return null;
+}
+
 
   // 评估单个条件
-  evaluateCondition(condition, userState) {
-    const { field, operator, value } = condition;
-    let actualValue = null;
+evaluateCondition(condition, userState) {
+  const { field, operator, value } = condition;
+  let actualValue;
 
-    // 获取实际值
-    switch (field) {
-      case 'level':
-        actualValue = userState.level || 1;
-        break;
-      case 'realm':
-      case 'realmIndex':
-        actualValue = userState.realmIndex || 0;
-        break;
-      case 'stage':
-      case 'stageIndex':
-        actualValue = userState.stageIndex || 0;
-        break;
-      case 'exp':
-        actualValue = userState.exp || 0;
-        break;
-      default:
-        // 属性值
-        if (userState.attributes && userState.attributes[field] !== undefined) {
-          actualValue = userState.attributes[field];
-        } else {
-          return false; // 未知字段，条件不满足
-        }
-    }
-
-    // 执行比较
-    switch (operator) {
-      case '>=': return actualValue >= value;
-      case '<=': return actualValue <= value;
-      case '>': return actualValue > value;
-      case '<': return actualValue < value;
-      case '==': return actualValue == value;
-      case '!=': return actualValue != value;
-      default: return false;
-    }
+  // 获取实际值
+  switch (field) {
+    case 'level': actualValue = userState.level ?? 1; break;
+    case 'realm':
+    case 'realmIndex': actualValue = userState.realmIndex ?? 0; break;
+    case 'stage':
+    case 'stageIndex': actualValue = userState.stageIndex ?? 0; break;
+    case 'exp': actualValue = userState.exp ?? 0; break;
+    default:
+      if (userState.attributes && field in userState.attributes) {
+        actualValue = userState.attributes[field];
+      } else {
+        if (this.debug) console.warn('[evaluateCondition] 未知字段:', field);
+        return false;
+      }
   }
+
+  // 执行比较
+  let result = false;
+  switch (operator) {
+    case '>=': result = actualValue >= value; break;
+    case '<=': result = actualValue <= value; break;
+    case '>': result = actualValue > value; break;
+    case '<': result = actualValue < value; break;
+    case '==': result = actualValue === value; break;
+    case '!=': result = actualValue !== value; break;
+    default:
+      if (this.debug) console.warn('[evaluateCondition] 未知运算符:', operator);
+      return false;
+  }
+
+  if (this.debug) {
+    console.log(`[evaluateCondition] ${field}(${actualValue}) ${operator} ${value} => ${result}`);
+  }
+
+  return result;
+}
+
 
   // 权重随机选择
   weightedRandomSelect(items, userState = {}, options = {}) {
-    if (items.length === 0) {
-      return null;
-    }
+  if (!Array.isArray(items) || items.length === 0) return null;
+  if (items.length === 1) return items[0];
 
-    if (items.length === 1) {
-      return items[0];
-    }
+  const weightedItems = items.map(item => {
+    let weight = Number(this.calculateItemWeight(item, userState)) || 0;
+    return { item, weight };
+  });
 
-    // 计算权重
-    const weightedItems = items.map(item => {
-      let weight = this.calculateItemWeight(item, userState);
-      return { item, weight };
-    });
+  const totalWeight = weightedItems.reduce((sum, w) => sum + w.weight, 0);
 
-    // 计算权重总和
-    const totalWeight = weightedItems.reduce((sum, weighted) => sum + weighted.weight, 0);
-
-    if (totalWeight <= 0) {
-      // 所有权重都是0或负数，随机选择
-      return items[Math.floor(Math.random() * items.length)];
-    }
-
-    // 权重随机选择
-    let random = Math.random() * totalWeight;
-
-    for (const weighted of weightedItems) {
-      random -= weighted.weight;
-      if (random <= 0) {
-        return weighted.item;
-      }
-    }
-
-    // 备用：返回最后一个
-    return weightedItems[weightedItems.length - 1].item;
+  if (options.debug) {
+    console.log('[weightedRandomSelect] 权重列表:', weightedItems, '总权重:', totalWeight);
   }
+
+  if (totalWeight <= 0) {
+    if (options.debug) console.warn('[weightedRandomSelect] 总权重 <= 0，随机选择一个元素');
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
+  let random = Math.random() * totalWeight;
+
+  for (const weighted of weightedItems) {
+    random -= weighted.weight;
+    if (random <= 0) {
+      if (options.debug) console.log('[weightedRandomSelect] 选择结果:', weighted.item);
+      return weighted.item;
+    }
+  }
+
+  // fallback 返回最后一个
+  return weightedItems[weightedItems.length - 1].item;
+}
+
 
   // 计算单个项目的权重
-  calculateItemWeight(item, userState) {
-    let baseWeight = 1;
-
-    // 获取基础权重
-    if (typeof item.weight === 'number') {
-      baseWeight = item.weight;
-    } else if (typeof item.weight === 'string') {
-      baseWeight = parseFloat(item.weight) || 1;
-    }
-
-    // 权重修正（可以根据用户状态调整权重）
-    let weightModifier = this.calculateWeightModifier(item, userState);
-
-    return Math.max(0, baseWeight * weightModifier);
+ calculateItemWeight(item, userState) {
+  // 基础权重
+  let baseWeight = 1;
+  if (typeof item.weight === 'number') {
+    baseWeight = item.weight;
+  } else if (typeof item.weight === 'string') {
+    const parsed = parseFloat(item.weight);
+    baseWeight = !isNaN(parsed) ? parsed : 1;
   }
+
+  // 权重修正
+  let weightModifier = Number(this.calculateWeightModifier(item, userState)) || 1;
+
+  const finalWeight = Math.max(0, baseWeight * weightModifier);
+
+  if (this.debug) {
+    console.log('[calculateItemWeight]', { item, baseWeight, weightModifier, finalWeight });
+  }
+
+  return finalWeight;
+}
+
 
   // 计算权重修正系数
   calculateWeightModifier(item, userState) {
-    let modifier = 1.0;
+  let modifier = 1.0;
+  const { attributes = {}, realmIndex = 0 } = userState;
 
-    // 根据物品类型调整权重
-    if (item.type) {
-      switch (item.type) {
-        case 'rare':
-          // 稀有物品受福缘影响
-          if (userState.attributes && userState.attributes.luck) {
-            modifier *= (1 + userState.attributes.luck * 0.02);
-          }
-          break;
-        case 'cultivation':
-          // 修炼相关受悟性影响
-          if (userState.attributes && userState.attributes.comprehension) {
-            modifier *= (1 + userState.attributes.comprehension * 0.01);
-          }
-          break;
-        case 'combat':
-          // 战斗相关受攻击力影响
-          if (userState.attributes && userState.attributes.attack) {
-            modifier *= (1 + userState.attributes.attack * 0.005);
-          }
-          break;
-      }
+  if (item.type) {
+    switch (item.type) {
+      case 'rare':
+        modifier *= (1 + Math.min(attributes.luck || 0, 100) * 0.01); // capped
+        break;
+      case 'cultivation':
+        modifier *= (1 + Math.log10((attributes.comprehension || 0) + 1) * 0.05);
+        break;
+      case 'combat':
+        modifier *= (1 + Math.log10((attributes.attack || 0) + 1) * 0.03);
+        break;
     }
-
-    // 根据境界调整权重（高级内容在低境界权重降低）
-    if (item.minRealm && userState.realmIndex !== undefined) {
-      const realmDiff = userState.realmIndex - (item.minRealm || 0);
-      if (realmDiff < 0) {
-        modifier *= Math.max(0.1, 1 + realmDiff * 0.5);
-      }
-    }
-
-    return modifier;
   }
+
+  if (item.minRealm !== undefined) {
+    const realmDiff = realmIndex - item.minRealm;
+    if (realmDiff < 0) {
+      modifier *= 1 / (1 + Math.abs(realmDiff)); // 平滑衰减
+    }
+  }
+
+  return Math.max(0.01, modifier); // 保证不为 0
+}
+
 
   // 重新加载指定数据
   async reloadData(filename) {
