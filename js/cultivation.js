@@ -513,13 +513,7 @@ triggerAdventure() {
       while (this.state.exp >= 100) {
         this.state.exp -= 100;
 
-        const gainLog = [
-          `攻击+2`,
-          `防御+2`,
-          `气血+20`,
-          `真元+15`,
-          `神识+1`
-        ].join('，');
+       
 
         const growth = this.getGrandmasterGrowth(this.state.realmIndex, this.state.stageIndex);
 
@@ -528,7 +522,13 @@ triggerAdventure() {
         this.state.attributes.hp += growth.hp;
         this.state.attributes.mana += growth.mana;
         this.state.attributes.spirit += growth.spirit;
-
+        const gainLog = [
+          `攻击+${growth.attack}`,
+          `防御+${growth.defense}`,
+          `气血+${growth.hp}`,
+          `真元+${growth.mana}`,
+          `神识+${growth.spirit}`
+        ].join('，');
         this.addLog(`✨ 大圆满境界中，修为积累化为实力增长 (${gainLog})`);
       }
 
