@@ -747,22 +747,22 @@ tryTribulation(minutes = 0) {
     this.renderLogs();
   }
 
-  renderCultivation() {
+renderCultivation() {
   const statusEl = document.getElementById("cultivation-status");
   const descEl = document.getElementById("cultivation-desc");
   const progressEl = document.getElementById("cultivation-progress");
   const btnTrib = document.getElementById("btn-tribulation");
 
   if (!statusEl || !progressEl) return;
-  
-    const realmIndex = this.state.realmIndex ?? 0;   // 如果 realmIndex 为 undefined，默认 0
-    const realm = this.REALMS[realmIndex];
 
-    if (!realm) {
-      console.error('未找到对应境界信息', realmIndex, this.REALMS);
-      return;   // 防止后续访问 realm.name 报错
-    }
-    
+  const realmIndex = this.state.realmIndex ?? 0;
+  const realm = this.REALMS[realmIndex];
+
+  if (!realm) {
+    console.error('未找到对应境界信息', realmIndex, this.REALMS);
+    return;
+  }
+
   // ===== 渡劫状态 =====
   if (this.state.tribulation?.needed) {
     statusEl.innerText = `⚡ 【${realm.name} 圆满】天劫将至`;
@@ -775,65 +775,18 @@ tryTribulation(minutes = 0) {
     return;
   }
 
-  // ===== 道年大圆满（后期未渡劫） =====
-  const isLateStage = this.state.stageIndex === this.STAGES.length - 1 && !this.state.tribulation?.needed;
-  if (isLateStage) {
-    const maxExpPerConversion = 100;
-    let remainingExp = this.state.exp;
-
-    statusEl.innerText = `✨ ${realm.name}后期修炼中（大圆满阶段）`;
-
-    const conversions = Math.floor(remainingExp / maxExpPerConversion);
-    const gain = { attack: 2, defense: 2, hp: 20, mana: 15, spirit: 1 };
-
-    let progress = 0;
-    const step = 2; // 每次动画进度步长
-    const totalSteps = conversions * 100 / step;
-
-    const updateProgressText = (percent) => {
-      if (descEl) descEl.innerText = `属性正在积累，当前进度：${percent}/100`;
-    };
-    updateProgressText(0);
-
-    const interval = setInterval(() => {
-      if (progress >= conversions * 100) {
-        clearInterval(interval);
-        return;
-      }
-
-      progress += step;
-      const percent = Math.min(100, progress % 100);
-      progressEl.style.width = percent + "%";
-      updateProgressText(percent);
-
-      // 每达到100%触发一次属性增加
-      if (progress % 100 === 0) {
-        Object.entries(gain).forEach(([attr, val]) => {
-          this.state.attributes[attr] += val;
-        });
-
-        // 弹窗提示
-        const tip = document.createElement("div");
-        tip.className = "attribute-tip";
-        tip.innerText = `✨ 属性获得提升！(攻击+2，防御+2，气血+20，真元+15，神识+1)`;
-        document.body.appendChild(tip);
-        setTimeout(() => {
-          tip.style.opacity = 0;
-          setTimeout(() => tip.remove(), 1000);
-        }, 1000);
-
-        this.addLog(`✨ ${realm.name}后期大圆满修炼：属性获得提升！`);
-        this.state.exp -= maxExpPerConversion;
-      }
-
-      this.renderAttributes();
-    }, 50);
-
+  // ===== 大圆满阶段经验累积显示 =====
+  const isGrandmaster = realmIndex >= this.REALMS.length - 1;
+  if (isGrandmaster) {
+    const percent = Math.min(100, Math.round(this.state.exp));
+    statusEl.innerText = `✨ ${realm.name} 大圆满修炼中`;
+    if (descEl) descEl.innerText = `经验累积中：${percent}%`;
+    progressEl.style.width = percent + "%";
     if (btnTrib) btnTrib.style.display = "none";
     return;
   }
 
-  // ===== 普通修炼状态 =====
+  // ===== 普通修炼阶段 =====
   const stage = this.STAGES[this.state.stageIndex];
   const needExp = this.getNeedExp();
   const percent = needExp > 0 ? Math.min(100, Math.round((this.state.exp / needExp) * 100)) : 0;
@@ -841,8 +794,10 @@ tryTribulation(minutes = 0) {
   statusEl.innerText = `境界：${realm.name} ${stage} ${this.state.level}重`;
   if (descEl) descEl.innerText = realm.desc;
   progressEl.style.width = percent + "%";
+
   if (btnTrib) btnTrib.style.display = "none";
 }
+
 
   setupEventListeners() {
     const btn = document.getElementById('btn-tribulation');
