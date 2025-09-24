@@ -459,29 +459,29 @@ triggerAdventure() {
   if (!minutes || minutes <= 0) return;
 
   try {
-    // 修炼时间累积
+    // 累积总修炼时间
     this.state.totalCultivationTime += minutes;
 
     // 奇遇触发
     this.triggerAdventure();
 
-    // 修炼日志
+    // 随机修炼日志模板
     const selectedLogTemplate = this.dataManager.selectByWeightAndCondition(
       this.CULTIVATION_LOGS,
       this.state,
       { triggerRate: 1.0, allowEmpty: false }
     );
     const logTemplate = selectedLogTemplate ? selectedLogTemplate.content : "静心调息，真元缓缓流转。";
-    let logMessage = `💪 修炼：${logTemplate}`;
-    const attrGains = [];
+    //成长属性优化
+    const realmFactor = this.state.realmIndex + 1;
+    const stageFactor = this.state.stageIndex === 2 ? 1.5 : 1.0;
 
-    // 随机属性提升
     const attributeBoosts = [
-      { content: 'attack', rewards: { attack: () => Math.floor(Math.random() * 3) + 1 }, weight: 1 },
-      { content: 'defense', rewards: { defense: () => Math.floor(Math.random() * 3) + 1 }, weight: 1 },
-      { content: 'hp', rewards: { hp: () => Math.floor(Math.random() * 15) + 5 }, weight: 1 },
-      { content: 'mana', rewards: { mana: () => Math.floor(Math.random() * 10) + 3 }, weight: 1 },
-      { content: 'spirit', rewards: { spirit: () => Math.floor(Math.random() * 3) + 1 }, weight: 1 }
+      { content: 'attack', rewards: { attack: () => Math.floor((Math.random() * 3 + 1) * realmFactor * stageFactor) }, weight: 1 },
+      { content: 'defense', rewards: { defense: () => Math.floor((Math.random() * 3 + 1) * realmFactor * stageFactor) }, weight: 1 },
+      { content: 'hp', rewards: { hp: () => Math.floor((Math.random() * 15 + 5) * realmFactor * stageFactor) }, weight: 1 },
+      { content: 'mana', rewards: { mana: () => Math.floor((Math.random() * 10 + 3) * realmFactor * stageFactor) }, weight: 1 },
+      { content: 'spirit', rewards: { spirit: () => Math.floor((Math.random() * 3 + 1) * realmFactor * stageFactor) }, weight: 1 }
     ];
 
     const selectedBoost = this.dataManager.selectByWeightAndCondition(
@@ -490,6 +490,7 @@ triggerAdventure() {
       { triggerRate: 0.3, allowEmpty: true }
     );
 
+    const attrGains = [];
     if (selectedBoost) {
       const attrNames = { attack: '攻击', defense: '防御', hp: '气血', mana: '真元', spirit: '神识' };
       for (const [attr, gainFunc] of Object.entries(selectedBoost.rewards)) {
@@ -499,31 +500,49 @@ triggerAdventure() {
       }
     }
 
+    // 普通修炼日志
     if (attrGains.length > 0) {
-      logMessage += ` (${attrGains.join('，')})`;
+      this.addLog(`💪 修炼：${logTemplate} (${attrGains.join('，')})`);
+    } else {
+      this.addLog(`💪 修炼：${logTemplate}`);
     }
-    this.addLog(logMessage);
 
-    // ===== 最高境界逻辑 =====
+    // ===== 大圆满阶段 =====
     if (this.state.realmIndex >= this.REALMS.length - 1) {
-      // 继续积累经验并转化为属性
       this.state.exp += minutes;
       while (this.state.exp >= 100) {
         this.state.exp -= 100;
-        this.state.attributes.attack += 2;
-        this.state.attributes.defense += 2;
-        this.state.attributes.hp += 20;
-        this.state.attributes.mana += 15;
-        this.state.attributes.spirit += 1;
-        this.addLog("✨ 大圆满境界中，修为积累化为实力增长。");
+
+        const gainLog = [
+          `攻击+2`,
+          `防御+2`,
+          `气血+20`,
+          `真元+15`,
+          `神识+1`
+        ].join('，');
+
+        const growth = this.getGrandmasterGrowth(this.state.realmIndex, this.state.stageIndex);
+
+        this.state.attributes.attack += growth.attack;
+        this.state.attributes.defense += growth.defense;
+        this.state.attributes.hp += growth.hp;
+        this.state.attributes.mana += growth.mana;
+        this.state.attributes.spirit += growth.spirit;
+
+        this.addLog(`✨ 大圆满境界中，修为积累化为实力增长 (${gainLog})`);
       }
+
+      if (this.state.tribulation.needed) {
+        this.addLog("⚡ 境界圆满：天劫已至，请点击『渡劫』按钮以突破！");
+      }
+
       this.saveState();
       this.renderCultivation();
       this.renderAttributes();
       return;
     }
 
-    // ===== 渡劫逻辑（仅提示，不自动触发） =====
+    // ===== 渡劫提示（普通阶段） =====
     if (this.state.tribulation.needed) {
       this.addLog("⚡ 境界圆满：天劫已至，请点击『渡劫』按钮以突破！");
       this.saveState();
@@ -532,7 +551,7 @@ triggerAdventure() {
       return;
     }
 
-    // ===== 正常修炼升级 =====
+    // ===== 普通阶段修炼升级逻辑 =====
     this.state.exp += minutes;
     let needExp = this.getNeedExp();
     let levelUps = 0;
@@ -558,6 +577,7 @@ triggerAdventure() {
           this.state.attributes.hp += 50;
           this.state.attributes.mana += 30;
         } else {
+          // 后期10重可突破
           this.state.stageIndex = 0;
           this.state.tribulation.needed = true;
           this.addLog("⚡ 境界圆满：感受到天劫将至，准备渡劫突破！");
@@ -575,6 +595,20 @@ triggerAdventure() {
     console.error('更新修仙进度时出错:', error);
   }
 }
+//大圆满阶段
+getGrandmasterGrowth(realmIndex, stageIndex) {
+  const realmFactor = realmIndex + 1; // 境界系数
+  const stageFactor = stageIndex === 2 ? 1.5 : 1.0; // 后期阶段成长更多
+
+  return {
+    attack: Math.floor(2 * realmFactor * stageFactor),
+    defense: Math.floor(2 * realmFactor * stageFactor),
+    hp: Math.floor(20 * realmFactor * stageFactor),
+    mana: Math.floor(15 * realmFactor * stageFactor),
+    spirit: Math.floor(1 * realmFactor * stageFactor)
+  };
+}
+
 // 渡劫补偿
 getTribulationFailBonus(realmIndex, stageIndex) {
   const realmFactor = realmIndex + 1; // 境界系数
