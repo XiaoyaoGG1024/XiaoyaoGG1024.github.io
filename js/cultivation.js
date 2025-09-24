@@ -523,15 +523,9 @@ triggerAdventure() {
       return;
     }
 
-    // ===== 渡劫逻辑 =====
+    // ===== 渡劫逻辑（仅提示，不自动触发） =====
     if (this.state.tribulation.needed) {
-      const success = this.tryTribulation(); // 你需要定义这个方法
-      if (!success) {
-        // 渡劫失败：经验照常积累 + 少量属性成长
-        this.state.exp += minutes;
-        this.state.attributes.spirit += Math.floor(minutes / 10); // 神识提升
-        this.addLog("⚡ 渡劫失败，但你从中汲取经验，境界更加稳固。");
-      }
+      this.addLog("⚡ 境界圆满：天劫已至，请点击『渡劫』按钮以突破！");
       this.saveState();
       this.renderCultivation();
       this.renderAttributes();
@@ -581,22 +575,33 @@ triggerAdventure() {
     console.error('更新修仙进度时出错:', error);
   }
 }
+// 渡劫补偿
+getTribulationFailBonus(realmIndex, stageIndex) {
+  const realmFactor = realmIndex + 1; // 境界系数
+  const stageFactor = stageIndex === 2 ? 1.5 : 1.0; // 后期补偿更多
 
-tryTribulation() {
-  if (!this.state.tribulation.needed) return;
+  return {
+    spirit: Math.floor(2 * realmFactor * stageFactor),
+    defense: Math.floor(1 * realmFactor * stageFactor),
+    exp: Math.floor(20 * realmFactor * stageFactor)
+  };
+}
+tryTribulation(minutes = 0) {
+  if (!this.state.tribulation.needed) return false;
 
   try {
     const t = this.state.tribulation;
 
-    // 基础成功率 + 属性加成
+    // 成功率计算
     const baseRate = t.successRate || 0.3;
-    const luckBonus = Math.min(0.2, this.state.attributes.luck * 0.01); // 福缘最多+20%
-    const spiritBonus = Math.min(0.1, this.state.attributes.spirit * 0.002); // 神识最多+10%
+    const luckBonus = Math.min(0.2, this.state.attributes.luck * 0.01);
+    const spiritBonus = Math.min(0.1, this.state.attributes.spirit * 0.002);
     const finalRate = Math.min(0.95, baseRate + luckBonus + spiritBonus);
 
     const rand = Math.random();
+    const success = rand < finalRate;
 
-    if (rand < finalRate) {
+    if (success) {
       // ===== 渡劫成功 =====
       const oldRealmIndex = this.state.realmIndex;
       this.state.realmIndex = Math.min(this.state.realmIndex + 1, this.REALMS.length - 1);
@@ -607,7 +612,7 @@ tryTribulation() {
 
       const newRealm = this.REALMS[this.state.realmIndex];
 
-      // 奖励随境界递增
+      // 境界提升奖励
       const realmFactor = this.state.realmIndex + 1;
       this.state.attributes.attack += 20 * realmFactor;
       this.state.attributes.defense += 15 * realmFactor;
@@ -629,12 +634,25 @@ tryTribulation() {
       t.failCount = (t.failCount || 0) + 1;
       t.successRate = Math.min(0.95, (t.successRate || 0.3) + 0.1);
 
-      // 失败成长补偿
-      this.state.attributes.spirit += 5; // 领悟天威
-      this.state.attributes.defense += 3; // 肉体受炼
-      this.state.exp += 50; // 修为沉淀
+      // ===== 动态失败补偿 =====
+      const bonus = this.getTribulationFailBonus(this.state.realmIndex, this.state.stageIndex);
 
-      const failMessage = `天劫威能恐怖，这次未能成功，但你的神识与防御得到了磨砺。`;
+      this.state.attributes.spirit += bonus.spirit;
+      this.state.attributes.defense += bonus.defense;
+      this.state.exp += bonus.exp;
+
+      this.addLog(
+        `💀 渡劫失败：吸收天劫余威，获得神识+${bonus.spirit}，防御+${bonus.defense}，经验+${bonus.exp}。`
+      );
+
+
+      // 如果是修炼中触发渡劫，额外加成
+      if (minutes > 0) {
+        this.state.exp += minutes;
+        this.state.attributes.spirit += Math.floor(minutes / 10);
+      }
+
+      const failMessage = `天劫威能恐怖，这次未能成功，但你从中汲取经验。`;
       this.addLog(`💀 渡劫失败：${failMessage}`);
       alert(
         `💀 渡劫失败！\n\n${failMessage}\n下一次成功率 ${(t.successRate * 100).toFixed(0)}%`
@@ -644,9 +662,12 @@ tryTribulation() {
     this.saveState();
     this.renderCultivation();
     this.renderAttributes();
+
+    return success;
   } catch (error) {
     console.error('渡劫时出错:', error);
     alert('渡劫过程中出现错误，请稍后重试！');
+    return false;
   }
 }
 
