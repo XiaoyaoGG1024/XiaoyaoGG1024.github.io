@@ -1,3 +1,8 @@
+if (window.__FIREWORKS_INITED__) {
+  console.warn('fireworks already initialized');
+  return;
+}
+window.__FIREWORKS_INITED__ = true;
 const canvas = document.getElementById('fireworks-canvas');
 if (!canvas) {
   console.error('canvas not found');
